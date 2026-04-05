@@ -1,10 +1,8 @@
+import { Link } from "react-router";
 import { Badge } from "./ui/badge";
-import { useTaskModal } from "../context/TaskModalContext";
 import { Task } from "../data/mockData";
-
-interface TaskListProps {
-  tasks: Task[];
-}
+import { useState } from "react";
+import { TaskModal } from "./TaskModal";
 
 const statusColors = {
   todo: "bg-zinc-800 text-zinc-400 border-zinc-700",
@@ -18,36 +16,60 @@ const statusLabels = {
   done: "Done",
 };
 
+interface TaskListProps {
+  tasks: Task[];
+}
+
 export function TaskList({ tasks }: TaskListProps) {
-  const { openTask } = useTaskModal();
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+  if (tasks.length === 0) {
+    return (
+      <div className="text-center py-12 px-4">
+        <p className="text-[13px] text-zinc-500">No tasks found</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-1">
-      {tasks.map((task) => (
-        <button
-          key={task.id}
-          onClick={() => openTask(task.id)}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-zinc-900/50 transition-colors group text-left"
-        >
-          <div className="flex-1 min-w-0">
-            <div className="text-[13px] text-zinc-100 truncate group-hover:text-white transition-colors">
-              {task.title}
-            </div>
-          </div>
-          <Badge variant="outline" className="text-[11px] px-2 py-0 h-5 bg-zinc-900 text-zinc-400 border-zinc-800 shrink-0 w-16 justify-center">
-            {task.assignedTo}
-          </Badge>
-          <span className="text-[11px] text-zinc-500 shrink-0 w-10 text-right">
-            {task.estimatedTime}
-          </span>
-          <Badge
-            variant="outline"
-            className={`text-[11px] px-2 py-0 h-5 shrink-0 w-24 justify-center ${statusColors[task.status]}`}
+    <>
+      <div className="space-y-2">
+        {tasks.map((task) => (
+          <button
+            key={task.id}
+            onClick={() => setSelectedTask(task)}
+            className="w-full text-left px-4 py-3 rounded-md bg-zinc-900/30 border border-zinc-800/50 hover:bg-zinc-900/50 hover:border-zinc-700 transition-colors group"
           >
-            {statusLabels[task.status]}
-          </Badge>
-        </button>
-      ))}
-    </div>
+            <div className="flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-[13px] text-zinc-100 mb-2 group-hover:text-white transition-colors">
+                  {task.title}
+                </h3>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline" className="text-[10px] px-2 py-0 h-5 bg-zinc-900 text-zinc-400 border-zinc-800">
+                    {task.assignedTo}
+                  </Badge>
+                  <span className="text-[11px] text-zinc-600">{task.estimatedTime}</span>
+                </div>
+              </div>
+              <Badge
+                variant="outline"
+                className={`text-[10px] px-2 py-0 h-5 shrink-0 ${statusColors[task.status]}`}
+              >
+                {statusLabels[task.status]}
+              </Badge>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {selectedTask && (
+        <TaskModal
+          task={selectedTask}
+          isOpen={!!selectedTask}
+          onClose={() => setSelectedTask(null)}
+        />
+      )}
+    </>
   );
 }

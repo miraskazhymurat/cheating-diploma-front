@@ -1,9 +1,12 @@
 import { Link } from "react-router";
 import { Plus, Users } from "lucide-react";
 import { boards, employees, getCurrentUser } from "../data/mockData";
+import { CreateBoardModal } from "../components/CreateBoardModal";
+import { useState } from "react";
 
 export function Boards() {
   const currentUser = getCurrentUser();
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
   // Get boards where user is owner or member
   const userBoards = boards.filter(
@@ -11,14 +14,18 @@ export function Boards() {
   );
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
-      {/* Header */}
+    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      <div className="max-w-4xl mx-auto px-6 py-12">
+        {/* Header */}
         <div className="mb-8 flex items-end justify-between">
           <div>
             <h1 className="text-[15px] text-zinc-100 mb-1">Your Boards</h1>
             <p className="text-[12px] text-zinc-500">Manage your task boards</p>
           </div>
-          <button className="text-[12px] px-3 py-1.5 bg-zinc-100 text-zinc-900 rounded-md hover:bg-white transition-colors inline-flex items-center gap-2">
+          <button 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="text-[12px] px-3 py-1.5 bg-zinc-100 text-zinc-900 rounded-md hover:bg-white transition-colors inline-flex items-center gap-2"
+          >
             <Plus className="w-3.5 h-3.5" />
             New Board
           </button>
@@ -68,11 +75,20 @@ export function Boards() {
         {userBoards.length === 0 && (
           <div className="text-center py-16">
             <p className="text-[13px] text-zinc-500 mb-4">No boards yet</p>
-            <button className="text-[12px] px-3 py-1.5 bg-zinc-800 text-zinc-300 rounded-md hover:bg-zinc-700 transition-colors">
+            <button 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="text-[12px] px-3 py-1.5 bg-zinc-800 text-zinc-300 rounded-md hover:bg-zinc-700 transition-colors"
+            >
               Create your first board
             </button>
           </div>
         )}
+      </div>
+
+      <CreateBoardModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
     </div>
   );
 }
