@@ -13,19 +13,24 @@ export function Login() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    // Api.login({ email, password })
-    //   .then((response) => {
-    //     if (response.data?.token) {
-    //       login(response.data.token);
-    //       navigate("/boards");
-    //     } else {
-    //       setError("Login response invalid");
-    //     }
-    //   })
-    //   .catch((err) => {
-    //     setError(err.response?.data?.message || "Login failed");
-    //   });
-    navigate("/boards");
+    Api.login({ email, password })
+      .then((response) => {
+        if (response.token) {
+          // Extract user data from response
+          const userData = {
+            id: response.id || response.userId || "",
+            name: response.name || response.username || "",
+            email: response.email || email,
+          };
+          login(response.token, userData);
+          navigate("/boards");
+        } else {
+          setError("Login response invalid");
+        }
+      })
+      .catch((err) => {
+        setError(err.response?.data?.message || "Login failed");
+      });
   };
 
   return (

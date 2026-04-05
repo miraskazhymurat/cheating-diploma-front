@@ -5,7 +5,8 @@ import { AIInsights } from "../components/AIInsights";
 import { Leaderboard } from "../components/Leaderboard";
 import { TaskDetail } from "./TaskDetail";
 import { TaskModalProvider } from "../context/TaskModalContext";
-import { tasks, employees, insights, boards, getCurrentUser } from "../data/mockData";
+import { FilterPanel, ActiveFilter } from "../components/FilterPanel";
+import { tasks, employees, insights, boards, getCurrentUser, TaskStatus } from "../data/mockData";
 import { LayoutList, LayoutGrid, Settings, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useParams, Link, Outlet } from "react-router";
@@ -14,6 +15,7 @@ export function Dashboard() {
   const { boardId } = useParams();
   const [viewMode, setViewMode] = useState<"list" | "board">("list");
   const [showOnlyYourTasks, setShowOnlyYourTasks] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
   
   const currentUser = getCurrentUser();
   const board = boards.find((b) => b.id === boardId);
@@ -37,10 +39,34 @@ export function Dashboard() {
   // Filter tasks by board
   const boardTasks = tasks.filter((task) => task.boardId === boardId);
   
-  // Filter by current user if needed
-  const filteredTasks = showOnlyYourTasks
-    ? boardTasks.filter((task) => task.assignedTo === currentUser.name)
-    : boardTasks;
+  // Get unique assignees for this board
+  const boardAssignees = Array.from(
+    new Set(boardTasks.map((task) => task.assignedTo))
+  );
+  
+  // Get available statuses from board tasks
+  const availableStatuses = Array.from(
+    new Set(boardTasks.map((task) => task.status))
+  ) as TaskStatus[];
+  
+  // Apply all filters
+  let filteredTasks = boardTasks;
+  
+  if (showOnlyYourTasks) {
+    filteredTasks = filteredTasks.filter((task) => task.assignedTo === currentUser.name);
+  }
+  
+  // Apply active filters
+  const statusFilters = activeFilters.filter((f) => f.type === "status").map((f) => f.value as TaskStatus);
+  const assigneeFilters = activeFilters.filter((f) => f.type === "assignee").map((f) => f.value);
+  
+  if (statusFilters.length > 0) {
+    filteredTasks = filteredTasks.filter((task) => statusFilters.includes(task.status));
+  }
+  
+  if (assigneeFilters.length > 0) {
+    filteredTasks = filteredTasks.filter((task) => assigneeFilters.includes(task.assignedTo));
+  }
 
   // Filter employees to show only board members
   const boardMembers = employees.filter((e) => board.members.includes(e.id));
@@ -72,42 +98,59 @@ export function Dashboard() {
         </div>
 
         {/* Filters */}
-        <div className="mb-6 flex items-center gap-4 px-3">
-          <button
-            onClick={() => setShowOnlyYourTasks(!showOnlyYourTasks)}
-            className={`text-[12px] px-3 py-1.5 rounded-md transition-colors ${
-              showOnlyYourTasks
-                ? "bg-zinc-800 text-zinc-100 border border-zinc-700"
-                : "text-zinc-500 hover:text-zinc-300 border border-transparent"
-            }`}
-          >
-            Your tasks
-          </button>
-          
-          <div className="ml-auto flex items-center gap-1 bg-zinc-900/50 rounded-md p-0.5">
+        <div className="mb-6 space-y-4 px-3">
+          {/* Top Row - Your Tasks & View Mode */}
+          <div className="flex items-center gap-4 flex-wrap">
             <button
-              onClick={() => setViewMode("list")}
-              className={`p-1.5 rounded transition-colors ${
-                viewMode === "list"
-                  ? "bg-zinc-800 text-zinc-100"
-                  : "text-zinc-500 hover:text-zinc-300"
+              onClick={() => setShowOnlyYourTasks(!showOnlyYourTasks)}
+              className={`text-[12px] px-3 py-1.5 rounded-md transition-colors ${
+                showOnlyYourTasks
+                  ? "bg-zinc-800 text-zinc-100 border border-zinc-700"
+                  : "text-zinc-500 hover:text-zinc-300 border border-transparent"
               }`}
-              title="List view"
             >
-              <LayoutList className="w-3.5 h-3.5" />
+              Your tasks
             </button>
-            <button
-              onClick={() => setViewMode("board")}
-              className={`p-1.5 rounded transition-colors ${
-                viewMode === "board"
-                  ? "bg-zinc-800 text-zinc-100"
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
-              title="Board view"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-            </button>
+
+            <div className="ml-auto flex items-center gap-1 bg-zinc-900/50 rounded-md p-0.5">
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-1.5 rounded transition-colors ${
+                  viewMode === "list"
+                    ? "bg-zinc-800 text-zinc-100"
+                    : "text-zinc-500 hover:text-zinc-300"
+                }`}
+                title="List view"
+              >
+                <LayoutList className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode("board")}
+                className={`p-1.5 rounded transition-colors ${
+                  viewMode === "board"
+                    ? "bg-zinc-800 text-zinc-100"
+                    : "text-zinc-500 hover:text-zinc-300"
+                }`}
+                title="Board view"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
+
+          {/* Filter Panel Component */}
+          <FilterPanel
+            availableStatuses={availableStatuses}
+            availableAssignees={boardAssignees}
+            activeFilters={activeFilters}
+            onAddFilter={(filter) => setActiveFilters([...activeFilters, filter])}
+            onRemoveFilter={(filter) =>
+              setActiveFilters(
+                activeFilters.filter((f) => !(f.type === filter.type && f.value === filter.value))
+              )
+            }
+            onClearAll={() => setActiveFilters([])}
+          />
         </div>
 
         {/* Main Grid */}

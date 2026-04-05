@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-let is_local = true; 
+let is_local = false;
 let domain = is_local ? "http://192.168.100.22:8080" : "http://localhost:7777";
 const Url = `${domain}`;
 
@@ -44,5 +44,18 @@ export default class Api {
 
     static isAuthenticated() {
         return !!localStorage.getItem('authToken');
+    }
+
+    static getCurrentUser() {
+        const token = localStorage.getItem('authToken');
+        if (!token) return null;
+
+        return axiosInstance.get(`${Url}/auth/me`)
+            .then(response => response.data);
+    }
+
+    static getDashboardData() {
+        return axiosInstance.get(`${Url}/dashboard`)
+            .then(response => response.data);
     }
 }
