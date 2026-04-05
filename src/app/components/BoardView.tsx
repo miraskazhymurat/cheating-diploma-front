@@ -1,5 +1,5 @@
-import { Link } from "react-router";
 import { Badge } from "./ui/badge";
+import { useTaskModal } from "../context/TaskModalContext";
 import { Task, TaskStatus } from "../data/mockData";
 
 interface BoardViewProps {
@@ -25,6 +25,8 @@ const columns: { status: TaskStatus; label: string }[] = [
 ];
 
 export function BoardView({ tasks }: BoardViewProps) {
+  const { openTask } = useTaskModal();
+
   const getTasksByStatus = (status: TaskStatus) => {
     return tasks.filter((task) => task.status === status);
   };
@@ -47,10 +49,10 @@ export function BoardView({ tasks }: BoardViewProps) {
             {/* Column Tasks */}
             <div className="space-y-2 flex-1">
               {columnTasks.map((task) => (
-                <Link
+                <button
                   key={task.id}
-                  to={`/task/${task.id}`}
-                  className="block px-3 py-3 rounded-md bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700 transition-colors group"
+                  onClick={() => openTask(task.id)}
+                  className="w-full text-left px-3 py-3 rounded-md bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700 transition-colors group"
                 >
                   <div className="text-[13px] text-zinc-100 mb-3 group-hover:text-white transition-colors">
                     {task.title}
@@ -63,7 +65,7 @@ export function BoardView({ tasks }: BoardViewProps) {
                       {task.estimatedTime}
                     </span>
                   </div>
-                </Link>
+                </button>
               ))}
               
               {columnTasks.length === 0 && (

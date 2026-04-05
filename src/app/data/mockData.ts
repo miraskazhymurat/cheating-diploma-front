@@ -28,6 +28,15 @@ export interface Board {
   createdAt: string;
 }
 
+export interface BoardInvite {
+  id: string;
+  boardId: string;
+  fromUserId: string;
+  toUserId: string;
+  status: "pending" | "accepted" | "rejected";
+  createdAt: string;
+}
+
 export interface Insight {
   id: string;
   text: string;
@@ -58,6 +67,25 @@ export const boards: Board[] = [
     ownerId: "3",
     members: ["1", "3", "5"],
     createdAt: "2026-03-25",
+  },
+];
+
+export const boardInvites: BoardInvite[] = [
+  {
+    id: "1",
+    boardId: "2",
+    fromUserId: "2",
+    toUserId: "1",
+    status: "pending",
+    createdAt: "2026-04-03",
+  },
+  {
+    id: "2",
+    boardId: "3",
+    fromUserId: "3",
+    toUserId: "1",
+    status: "pending",
+    createdAt: "2026-04-04",
   },
 ];
 
@@ -187,3 +215,8 @@ export const insights: Insight[] = [
 
 // Helper to get current user (simulated)
 export const getCurrentUser = () => employees[0]; // Alex
+
+// Helper to get pending invites for current user
+export const getPendingInvites = (userId: string) => {
+  return boardInvites.filter((invite) => invite.toUserId === userId && invite.status === "pending");
+};

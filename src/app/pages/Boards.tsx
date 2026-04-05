@@ -1,7 +1,6 @@
 import { Link } from "react-router";
 import { Plus, Users } from "lucide-react";
 import { boards, employees, getCurrentUser } from "../data/mockData";
-import { Header } from "../components/Header";
 
 export function Boards() {
   const currentUser = getCurrentUser();
@@ -12,12 +11,8 @@ export function Boards() {
   );
 
   return (
-    <>
-      <Header />
-      <div className="flex flex-col h-[calc(100vh-4rem)] bg-zinc-950 text-zinc-100 overflow-hidden">
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-6 py-8">
-        {/* Header */}
+    <div className="max-w-4xl mx-auto px-6 py-8">
+      {/* Header */}
         <div className="mb-8 flex items-end justify-between">
           <div>
             <h1 className="text-[15px] text-zinc-100 mb-1">Your Boards</h1>
@@ -78,9 +73,6 @@ export function Boards() {
             </button>
           </div>
         )}
-          </div>
-        </div>
-      </div>
-    </>
+    </div>
   );
 }

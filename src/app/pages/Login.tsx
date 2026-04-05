@@ -13,19 +13,19 @@ export function Login() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    Api.login({ email, password })
-      .then((response) => {
-        // Assuming your API returns user data and token
-        if (response.data?.token) {
-          login(response.data.token);
-          navigate("/boards");
-        } else {
-          setError("Login response invalid");
-        }
-      })
-      .catch((err) => {
-        setError(err.response?.data?.message || "Login failed");
-      });
+    // Api.login({ email, password })
+    //   .then((response) => {
+    //     if (response.data?.token) {
+    //       login(response.data.token);
+    //       navigate("/boards");
+    //     } else {
+    //       setError("Login response invalid");
+    //     }
+    //   })
+    //   .catch((err) => {
+    //     setError(err.response?.data?.message || "Login failed");
+    //   });
+    navigate("/boards");
   };
 
   return (

@@ -1,5 +1,5 @@
-import { Link } from "react-router";
 import { Badge } from "./ui/badge";
+import { useTaskModal } from "../context/TaskModalContext";
 import { Task } from "../data/mockData";
 
 interface TaskListProps {
@@ -19,13 +19,15 @@ const statusLabels = {
 };
 
 export function TaskList({ tasks }: TaskListProps) {
+  const { openTask } = useTaskModal();
+
   return (
     <div className="space-y-1">
       {tasks.map((task) => (
-        <Link
+        <button
           key={task.id}
-          to={`/task/${task.id}`}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-zinc-900/50 transition-colors group"
+          onClick={() => openTask(task.id)}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-zinc-900/50 transition-colors group text-left"
         >
           <div className="flex-1 min-w-0">
             <div className="text-[13px] text-zinc-100 truncate group-hover:text-white transition-colors">
@@ -44,7 +46,7 @@ export function TaskList({ tasks }: TaskListProps) {
           >
             {statusLabels[task.status]}
           </Badge>
-        </Link>
+        </button>
       ))}
     </div>
   );

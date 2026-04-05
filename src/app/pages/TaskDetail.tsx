@@ -1,6 +1,7 @@
-import { Link, useParams } from "react-router";
-import { ArrowLeft } from "lucide-react";
+import { useParams } from "react-router";
 import { Badge } from "../components/ui/badge";
+import { Modal } from "../components/Modal";
+import { useTaskModal } from "../context/TaskModalContext";
 import { tasks } from "../data/mockData";
 
 const statusColors = {
@@ -16,42 +17,19 @@ const statusLabels = {
 };
 
 export function TaskDetail() {
-  const { taskId } = useParams();
-  const task = tasks.find((t) => t.id === taskId);
+  const { selectedTaskId, closeTask } = useTaskModal();
+  const task = tasks.find((t) => t.id === selectedTaskId);
 
   if (!task) {
-    return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-[13px] text-zinc-500 mb-4">Task not found</p>
-          <Link
-            to="/"
-            className="text-[12px] text-zinc-400 hover:text-zinc-100 transition-colors inline-flex items-center gap-2"
-          >
-            <ArrowLeft className="w-3 h-3" />
-            Back to dashboard
-          </Link>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <div className="max-w-3xl mx-auto px-6 py-12">
-        {/* Back Button */}
-        <Link
-          to="/"
-          className="text-[12px] text-zinc-400 hover:text-zinc-100 transition-colors inline-flex items-center gap-2 mb-8"
-        >
-          <ArrowLeft className="w-3 h-3" />
-          Back to dashboard
-        </Link>
-
-        {/* Task Header */}
-        <div className="mb-8">
+    <Modal isOpen={!!selectedTaskId} onClose={closeTask} title={task.title}>
+      <div className="space-y-6">
+        {/* Task Status and Metadata */}
+        <div>
           <div className="flex items-start gap-3 mb-4">
-            <h1 className="text-[15px] text-zinc-100 flex-1">{task.title}</h1>
             <Badge
               variant="outline"
               className={`text-[11px] px-2 py-0 h-5 ${statusColors[task.status]}`}
@@ -84,6 +62,6 @@ export function TaskDetail() {
           </div>
         )}
       </div>
-    </div>
+    </Modal>
   );
 }

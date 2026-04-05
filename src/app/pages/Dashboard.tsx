@@ -3,10 +3,12 @@ import { BoardView } from "../components/BoardView";
 import { TeamWorkload } from "../components/TeamWorkload";
 import { AIInsights } from "../components/AIInsights";
 import { Leaderboard } from "../components/Leaderboard";
+import { TaskDetail } from "./TaskDetail";
+import { TaskModalProvider } from "../context/TaskModalContext";
 import { tasks, employees, insights, boards, getCurrentUser } from "../data/mockData";
 import { LayoutList, LayoutGrid, Settings, ChevronDown } from "lucide-react";
 import { useState } from "react";
-import { useParams, Link } from "react-router";
+import { useParams, Link, Outlet } from "react-router";
 
 export function Dashboard() {
   const { boardId } = useParams();
@@ -18,7 +20,7 @@ export function Dashboard() {
 
   if (!board) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
+      <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <p className="text-[13px] text-zinc-500 mb-4">Board not found</p>
           <Link
@@ -44,9 +46,9 @@ export function Dashboard() {
   const boardMembers = employees.filter((e) => board.members.includes(e.id));
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <TaskModalProvider>
+      <>
       <div className="max-w-6xl mx-auto px-6 py-12">
-        {/* Header */}
         <div className="mb-8 flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -143,7 +145,10 @@ export function Dashboard() {
             </div>
           </div>
         </div>
-      </div>
     </div>
+    <Outlet />
+    <TaskDetail />
+    </>
+    </TaskModalProvider>
   );
 }
