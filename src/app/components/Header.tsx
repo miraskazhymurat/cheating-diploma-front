@@ -1,11 +1,12 @@
 import { Link, useLocation } from "react-router";
 import { LayoutGrid, User, LogOut, Inbox } from "lucide-react";
-import { getCurrentUser, getPendingInvites } from "../data/mockData";
+import { getPendingInvites } from "../data/mockData";
+import { useAuth } from "../context/AuthContext";
 
 export function Header() {
   const location = useLocation();
-  const currentUser = getCurrentUser();
-  const pendingInvites = getPendingInvites(currentUser.id);
+  const currentUser = useAuth().user;
+  const pendingInvites = currentUser ? getPendingInvites(currentUser.id) : [];
 
   const isActive = (path: string) => {
     return location.pathname.startsWith(path);
@@ -61,10 +62,10 @@ export function Header() {
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-zinc-900/30 border border-zinc-800/50">
             <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center">
               <span className="text-[10px] text-zinc-300">
-                {currentUser.name.charAt(0)}
+                {(currentUser?.name ?? "G").charAt(0)}
               </span>
             </div>
-            <span className="text-[12px] text-zinc-300">{currentUser.name}</span>
+            <span className="text-[12px] text-zinc-300">{currentUser?.name ?? "Guest"}</span>
           </div>
 
           <Link

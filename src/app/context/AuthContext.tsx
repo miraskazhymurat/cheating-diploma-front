@@ -56,6 +56,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("user", JSON.stringify(userData));
   };
 
+  const getUser = () => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      return JSON.parse(storedUser) as User;
+    }
+    return null;
+  }
+
   return (
     <AuthContext.Provider
       value={{

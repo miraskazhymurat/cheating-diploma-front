@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { Plus, Users, Mail } from "lucide-react";
 import { CreateBoardModal } from "../components/CreateBoardModal";
+import { CreateProfileModal } from "../components/CreateProfileModal";
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import Api from "../../api/Api";
@@ -22,11 +23,13 @@ interface DashboardData {
   };
   boards: Board[];
   messageCount: number;
+  isFirstLogin: boolean;
 }
 
 export function Boards() {
   const { setUser } = useAuth();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
   const [userBoards, setUserBoards] = useState<Board[]>([]);
   const [messageCount, setMessageCount] = useState(0);
   const [userName, setUserName] = useState<string>("");
@@ -56,6 +59,10 @@ export function Boards() {
           // Set message count
           if (typeof dashboardData.messageCount === 'number') {
             setMessageCount(dashboardData.messageCount);
+          }
+
+          if (dashboardData.isFirstLogin) {
+            setIsFirstLogin(true);
           }
         }
       } catch (err) {
@@ -171,6 +178,10 @@ export function Boards() {
         )}
       </div>
 
+      <CreateProfileModal
+        isOpen={isFirstLogin}
+        onComplete={() => setIsFirstLogin(false)}
+      />
       <CreateBoardModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}

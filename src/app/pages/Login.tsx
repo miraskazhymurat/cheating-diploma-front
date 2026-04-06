@@ -15,14 +15,14 @@ export function Login() {
     setError("");
     Api.login({ email, password })
       .then((response) => {
-        if (response.token) {
+        if (response.data.token) {
           // Extract user data from response
           const userData = {
-            id: response.id || response.userId || "",
-            name: response.name || response.username || "",
-            email: response.email || email,
+            id: response.data.id || response.userId || "",
+            name: response.data.name || response.data.username || "",
+            email: response.data.email || email,
           };
-          login(response.token, userData);
+          login(response.data.token, userData);
           navigate("/boards");
         } else {
           setError("Login response invalid");

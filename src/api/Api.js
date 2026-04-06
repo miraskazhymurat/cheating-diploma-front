@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-let is_local = false;
+let is_local = true;
 let domain = is_local ? "http://192.168.100.22:8080" : "http://localhost:7777";
 const Url = `${domain}`;
 
@@ -58,4 +58,15 @@ export default class Api {
         return axiosInstance.get(`${Url}/dashboard`)
             .then(response => response.data);
     }
+
+    static updateProfile(profileData) {
+        return axiosInstance.post(`${Url}/profile/update`, profileData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        })
+            .then(response => response.data);
+    }
+
+    
 }
