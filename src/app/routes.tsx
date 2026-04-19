@@ -5,6 +5,7 @@ import { BoardSettings } from "./pages/BoardSettings";
 import { Login } from "./pages/Login";
 import { Inbox } from "./pages/Inbox";
 import { Register } from "./pages/Register";
+import { Profile } from "./pages/Profile";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 export const router = createBrowserRouter([
@@ -41,6 +42,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <Inbox />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/profile",
+    element: (
+      <ProtectedRoute>
+        <Profile />
       </ProtectedRoute>
     ),
   },

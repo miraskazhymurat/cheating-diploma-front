@@ -1,147 +1,186 @@
 import { Badge } from "./ui/badge";
-import { useTaskModal } from "../context/TaskModalContext";
-import { Task, TaskStatus } from "../data/mockData";
-import { useState } from "react";
+import { type UITask, type BoardStatusResponse } from "../../api/types";
+import { useRef, useState } from "react";
 import { TaskModal } from "./TaskModal";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import { useUpdateTask } from "../../hooks/useTasks";
 
-interface BoardViewProps {
-  tasks: Task[];
+const difficultyConfig: Record<string, { label: string; className: string; dot: string }> = {
+  easy: { label: "Easy", className: "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/50", dot: "bg-emerald-500 dark:bg-emerald-400" },
+  medium: { label: "Medium", className: "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50", dot: "bg-amber-500 dark:bg-amber-400" },
+  hard: { label: "Hard", className: "bg-red-50 text-red-600 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50", dot: "bg-red-500 dark:bg-red-400" },
+};
+
+const DRAG_TYPE = "TASK";
+
+interface DragItem {
+  taskId: number;
+  fromStatusId: number;
 }
 
-const statusColors = {
-  todo: "bg-zinc-800 text-zinc-400 border-zinc-700",
-  "in-progress": "bg-blue-950/30 text-blue-400 border-blue-900/50",
-  done: "bg-emerald-950/30 text-emerald-400 border-emerald-900/50",
-};
+interface TaskCardProps {
+  task: UITask;
+  onClick: () => void;
+}
 
-const statusLabels = {
-  todo: "Todo",
-  "in-progress": "In Progress",
-  done: "Done",
-};
+function TaskCard({ task, onClick }: TaskCardProps) {
+  const ref = useRef<HTMLDivElement>(null);
 
-const columns: { status: TaskStatus; label: string }[] = [
-  { status: "todo", label: "Todo" },
-  { status: "in-progress", label: "In Progress" },
-  { status: "done", label: "Done" },
-];
+  const [{ isDragging }, drag] = useDrag<DragItem, void, { isDragging: boolean }>({
+    type: DRAG_TYPE,
+    item: { taskId: task.backendId, fromStatusId: task.statusId },
+    collect: (monitor) => ({ isDragging: monitor.isDragging() }),
+  });
 
-export function BoardView({ tasks }: BoardViewProps) {
-  const { openTask, updateTaskStatus } = useTaskModal();
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
-  const [dragOverStatus, setDragOverStatus] = useState<TaskStatus | null>(null);
+  drag(ref);
 
-  const getTasksByStatus = (status: TaskStatus) => {
-    return tasks.filter((task) => task.status === status);
+  return (
+    <div
+      ref={ref}
+      onClick={onClick}
+      className={`px-4 py-3 rounded-md bg-white dark:bg-zinc-900/30 border border-zinc-200/50 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors cursor-pointer group ${isDragging ? "opacity-40" : ""}`}
+    >
+      <h4 className="text-[13px] text-zinc-900 dark:text-zinc-100 mb-2 group-hover:text-black dark:group-hover:text-white transition-colors">
+        {task.title}
+      </h4>
+      <div className="flex items-center gap-2 flex-wrap">
+        <Badge variant="outline" className="text-[10px] px-2 py-0 h-5 bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800">
+          {task.assignedTo}
+        </Badge>
+        {task.estimatedTime && (
+          <span className="text-[11px] text-zinc-400 dark:text-zinc-600">{task.estimatedTime}</span>
+        )}
+        {task.difficulty && difficultyConfig[task.difficulty] && (() => {
+          const d = difficultyConfig[task.difficulty!];
+          return (
+            <Badge variant="outline" className={`text-[10px] px-2 py-0 h-5 flex items-center gap-1 ${d.className}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${d.dot}`} />
+              {d.label}
+            </Badge>
+          );
+        })()}
+      </div>
+    </div>
+  );
+}
+
+interface DroppableColumnProps {
+  statusId: number;
+  title: string;
+  color?: string;
+  tasks: UITask[];
+  onDrop: (taskId: number, toStatusId: number) => void;
+  onTaskClick: (task: UITask) => void;
+}
+
+function DroppableColumn({ statusId, title, color, tasks, onDrop, onTaskClick }: DroppableColumnProps) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  const [{ isOver, canDrop }, drop] = useDrop<DragItem, void, { isOver: boolean; canDrop: boolean }>({
+    accept: DRAG_TYPE,
+    canDrop: (item) => item.fromStatusId !== statusId,
+    drop: (item) => onDrop(item.taskId, statusId),
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+      canDrop: monitor.canDrop(),
+    }),
+  });
+
+  drop(ref);
+
+  const isActive = isOver && canDrop;
+
+  return (
+    <div ref={ref} className="flex flex-col">
+      <div className="flex items-center justify-between mb-3 px-3">
+        <div className="flex items-center gap-2">
+          {color && (
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+          )}
+          <h3 className="text-[12px] text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">{title}</h3>
+        </div>
+        <span className="text-[11px] text-zinc-400 dark:text-zinc-600">{tasks.length}</span>
+      </div>
+      <div
+        className={`space-y-2 flex-1 min-h-[80px] rounded-md p-1 transition-colors ${isActive ? "bg-zinc-100 dark:bg-zinc-800/40 ring-1 ring-zinc-300 dark:ring-zinc-700" : ""
+          }`}
+        style={
+          color && isActive
+            ? { boxShadow: `0 0 0 2px ${color}` }
+            : undefined
+        }
+      >
+        {tasks.map((task) => (
+          <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
+        ))}
+        {tasks.length === 0 && (
+          <div className="px-4 py-8 text-center">
+            <p className="text-[12px] text-zinc-400 dark:text-zinc-600">
+              {isActive ? "Drop here" : "No tasks"}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface BoardViewProps {
+  boardId: number;
+  tasks: UITask[];
+  statuses?: BoardStatusResponse[];
+}
+
+export function BoardView({ boardId, tasks, statuses = [] }: BoardViewProps) {
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const selectedTask = selectedTaskId != null ? tasks.find((t) => t.backendId === selectedTaskId) ?? null : null;
+  const updateTask = useUpdateTask(boardId);
+
+  const handleDrop = (taskId: number, toStatusId: number) => {
+    updateTask.mutate({ taskId, payload: { status_id: toStatusId } });
   };
 
-  const handleDragStart = (e: React.DragEvent<HTMLButtonElement>, taskId: string) => {
-    setDraggedTaskId(taskId);
-    e.dataTransfer.effectAllowed = "move";
-  };
+  const columns = statuses.length > 0
+    ? statuses.map((s) => ({
+      statusId: s.status_id,
+      title: s.name,
+      color: s.colour,
+      tasks: tasks.filter((t) => t.statusId === s.status_id),
+    }))
+    : [
+      { statusId: -1, title: "Todo", color: undefined, tasks: tasks.filter((t) => t.status === "todo") },
+      { statusId: -2, title: "In Progress", color: undefined, tasks: tasks.filter((t) => t.status === "in-progress") },
+      { statusId: -3, title: "Done", color: undefined, tasks: tasks.filter((t) => t.status === "done") },
+    ];
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDragEnter = (status: TaskStatus) => {
-    setDragOverStatus(status);
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    // Only clear drag over if leaving the entire drop zone
-    if (e.currentTarget === e.target) {
-      setDragOverStatus(null);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetStatus: TaskStatus) => {
-    e.preventDefault();
-    
-    if (draggedTaskId) {
-      const draggedTask = tasks.find((t) => t.id === draggedTaskId);
-      if (draggedTask && draggedTask.status !== targetStatus) {
-        updateTaskStatus(draggedTaskId, targetStatus);
-      }
-    }
-    
-    setDraggedTaskId(null);
-    setDragOverStatus(null);
-  };
+  const gridCols = columns.length <= 3 ? "md:grid-cols-3" : columns.length === 4 ? "md:grid-cols-4" : "md:grid-cols-3 lg:grid-cols-5";
 
   return (
     <>
-      <div className="grid grid-cols-3 gap-4">
-        {columns.map((column) => {
-          const columnTasks = getTasksByStatus(column.status);
-          const isDropTarget = dragOverStatus === column.status && draggedTaskId;
-          
-          return (
-            <div key={column.status} className="flex flex-col">
-              {/* Column Header */}
-              <div className="px-3 py-2 mb-3 flex items-center gap-2">
-                <h3 className="text-[12px] text-zinc-400">{column.label}</h3>
-                <span className="text-[11px] text-zinc-600">
-                  {columnTasks.length}
-                </span>
-              </div>
-
-              {/* Column Tasks - Drop Zone */}
-              <div
-                onDragOver={handleDragOver}
-                onDragEnter={() => handleDragEnter(column.status)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, column.status)}
-                className={`space-y-2 flex-1 p-2 rounded-md transition-colors ${
-                  isDropTarget
-                    ? "bg-zinc-800/50 border-2 border-dashed border-zinc-600"
-                    : "bg-transparent border-2 border-dashed border-transparent"
-                }`}
-              >
-                {columnTasks.map((task) => (
-                  <button
-                    key={task.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, task.id)}
-                    onClick={() => setSelectedTask(task)}
-                    className={`w-full text-left px-3 py-3 rounded-md border transition-all cursor-grab active:cursor-grabbing ${
-                      draggedTaskId === task.id
-                        ? "opacity-50 bg-zinc-900/30 border-zinc-800/30"
-                        : "bg-zinc-900/50 border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700"
-                    }`}
-                  >
-                    <div className="text-[13px] text-zinc-100 mb-3 group-hover:text-white transition-colors">
-                      {task.title}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-[11px] px-2 py-0 h-5 bg-zinc-900 text-zinc-400 border-zinc-800">
-                        {task.assignedTo}
-                      </Badge>
-                      <span className="text-[11px] text-zinc-500">
-                        {task.estimatedTime}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-                
-                {columnTasks.length === 0 && (
-                  <div className="px-3 py-8 text-center">
-                    <span className="text-[11px] text-zinc-600">No tasks</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <DndProvider backend={HTML5Backend}>
+        <div className={`grid grid-cols-1 ${gridCols} gap-4`}>
+          {columns.map((col) => (
+            <DroppableColumn
+              key={col.statusId}
+              statusId={col.statusId}
+              title={col.title}
+              color={col.color}
+              tasks={col.tasks}
+              onDrop={handleDrop}
+              onTaskClick={(task) => setSelectedTaskId(task.backendId)}
+            />
+          ))}
+        </div>
+      </DndProvider>
 
       {selectedTask && (
         <TaskModal
           task={selectedTask}
           isOpen={!!selectedTask}
-          onClose={() => setSelectedTask(null)}
+          onClose={() => setSelectedTaskId(null)}
+          boardId={boardId}
+          statuses={statuses}
         />
       )}
     </>

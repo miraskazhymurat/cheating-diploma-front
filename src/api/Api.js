@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 let is_local = true;
-let domain = is_local ? "http://192.168.100.22:8080" : "http://localhost:7777";
+let domain = is_local ? "http://192.168.100.32:8080" : "http://localhost:7777";
 const Url = `${domain}`;
 
 // Create axios instance with token
