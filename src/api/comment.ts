@@ -4,6 +4,8 @@ export interface CommentResponse {
   id: number;
   task_id: number;
   author_id: number;
+  author_full_name: string;
+  author_photo?: string;
   content: string;
   created_at: string;
   updated_at: string;
@@ -11,8 +13,8 @@ export interface CommentResponse {
 
 export const commentApi = {
   getByTask: async (taskId: number): Promise<CommentResponse[]> => {
-    const { data } = await axiosInstance.get<{ data: CommentResponse[] }>(`/tasks/${taskId}/comments`);
-    return data;
+    const res = await axiosInstance.get<{ success: boolean; data: CommentResponse[] }>(`/tasks/${taskId}/comments`);
+    return (res as any).data ?? res;
   },
 
   create: async (taskId: number, content: string): Promise<CommentResponse> => {

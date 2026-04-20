@@ -6,10 +6,12 @@ import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useDashboard } from "../../hooks/useBoards";
 import { useMe } from "../../hooks/useEmployee";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function Boards() {
   const { user } = useAuth();
   const { data: employee } = useMe();
+  const queryClient = useQueryClient();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { data, isLoading, isError } = useDashboard();
 
@@ -103,7 +105,10 @@ export function Boards() {
 
       <CreateProfileModal
         isOpen={isFirstLogin}
-        onComplete={() => {}}
+        onComplete={() => {
+          queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+          queryClient.invalidateQueries({ queryKey: ["employee", "me"] });
+        }}
       />
       <CreateBoardModal
         isOpen={isCreateModalOpen}

@@ -4,7 +4,7 @@ import { Badge } from "./ui/badge";
 import { useEffect, useRef, useState } from "react";
 import { useUpdateTask, useDeleteAttachment, useUploadAttachment, useDeleteTask } from "../../hooks/useTasks";
 import { useTaskComments, useAddComment, useDeleteComment } from "../../hooks/useComments";
-import { useAllEmployees } from "../../hooks/useEmployee";
+import { useBoardEmployees } from "../../hooks/useEmployee";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -218,7 +218,7 @@ export function TaskModal({ task, isOpen, onClose, boardId, statuses = [] }: Tas
   const { data: comments = [], isLoading: commentsLoading } = useTaskComments(task.backendId);
   const addComment = useAddComment(task.backendId);
   const deleteComment = useDeleteComment(task.backendId);
-  const { data: members = [] } = useAllEmployees();
+  const { data: members = [] } = useBoardEmployees(boardId ?? 0);
 
   const patch = (payload: Parameters<typeof updateTask.mutate>[0]["payload"]) => {
     updateTask.mutate({ taskId: task.backendId, payload });
@@ -441,12 +441,19 @@ export function TaskModal({ task, isOpen, onClose, boardId, statuses = [] }: Tas
                 )}
                 {comments.map((comment) => (
                   <div key={comment.id} className="flex items-start gap-3 group">
-                    <div className="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center shrink-0 mt-0.5">
-                      <span className="text-[9px] text-zinc-600 dark:text-zinc-300">U</span>
+                    <div className="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center shrink-0 mt-0.5 overflow-hidden">
+                      {comment.author_photo ? (
+                        <img src={comment.author_photo} alt={comment.author_full_name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-[9px] text-zinc-600 dark:text-zinc-300">{comment.author_full_name?.charAt(0) ?? "?"}</span>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] text-zinc-800 dark:text-zinc-200 leading-relaxed">{comment.content}</p>
-                      <span className="text-[11px] text-zinc-400 dark:text-zinc-600">{formatDate(comment.created_at)}</span>
+                      <div className="flex items-baseline gap-2 mb-0.5">
+                        <span className="text-[12px] font-medium text-zinc-900 dark:text-zinc-100">{comment.author_full_name}</span>
+                        <span className="text-[11px] text-zinc-400 dark:text-zinc-500">{formatDate(comment.created_at)}</span>
+                      </div>
+                      <p className="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed">{comment.content}</p>
                     </div>
                     <button
                       onClick={() => deleteComment.mutate(comment.id)}

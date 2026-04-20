@@ -47,6 +47,24 @@ export function CreateTaskModal({
   const [showTesterDropdown, setShowTesterDropdown] = useState(false);
   const [showDifficultyDropdown, setShowDifficultyDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
+
+  const closeAllDropdowns = () => {
+    setShowAssigneeDropdown(false);
+    setShowTesterDropdown(false);
+    setShowDifficultyDropdown(false);
+    setShowPriorityDropdown(false);
+  };
+
+  const toggleDropdown = (name: "assignee" | "tester" | "difficulty" | "priority") => {
+    const current = { assignee: showAssigneeDropdown, tester: showTesterDropdown, difficulty: showDifficultyDropdown, priority: showPriorityDropdown }[name];
+    closeAllDropdowns();
+    if (!current) {
+      if (name === "assignee") setShowAssigneeDropdown(true);
+      else if (name === "tester") setShowTesterDropdown(true);
+      else if (name === "difficulty") setShowDifficultyDropdown(true);
+      else setShowPriorityDropdown(true);
+    }
+  };
   const [files, setFiles] = useState<File[]>([]);
 
   const { data: employees = [] } = useBoardEmployees(boardId);
@@ -54,8 +72,8 @@ export function CreateTaskModal({
 
   if (!isOpen) return null;
 
-  const selectedAssignee = employees.find((e) => e.id === assigneeId);
-  const selectedTester = employees.find((e) => e.id === testerId);
+  const selectedAssignee = employees.find((e) => e.user_id === assigneeId);
+  const selectedTester = employees.find((e) => e.user_id === testerId);
   const selectedDifficulty = difficultyOptions.find((d) => d.value === difficulty);
   const selectedPriority = priorityOptions.find((p) => p.value === priorityId);
 
@@ -177,7 +195,7 @@ export function CreateTaskModal({
                 <label className="text-[11px] text-zinc-600 dark:text-zinc-400 block mb-2">Assignee *</label>
                 <div className="relative">
                   <button
-                    onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
+                    onClick={() => toggleDropdown("assignee")}
                     className="w-full px-3 py-2 text-[13px] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-700 text-zinc-900 dark:text-zinc-100 flex items-center justify-between hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
                   >
                     <span className={useAI || assigneeId ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400 dark:text-zinc-600"}>
@@ -217,10 +235,10 @@ export function CreateTaskModal({
                       <div className="max-h-48 overflow-y-auto">
                         {employees.map((emp) => (
                           <button
-                            key={emp.id}
-                            onClick={() => handleAssigneeSelect(emp.id)}
+                            key={emp.user_id}
+                            onClick={() => handleAssigneeSelect(emp.user_id)}
                             className={`w-full px-3 py-2 text-[13px] text-left hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-3 ${
-                              assigneeId === emp.id && !useAI ? "bg-zinc-100 dark:bg-zinc-800" : ""
+                              assigneeId === emp.user_id && !useAI ? "bg-zinc-100 dark:bg-zinc-800" : ""
                             }`}
                           >
                             <div className="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center shrink-0">
@@ -245,7 +263,7 @@ export function CreateTaskModal({
                 <label className="text-[11px] text-zinc-600 dark:text-zinc-400 block mb-2">Tester *</label>
                 <div className="relative">
                   <button
-                    onClick={() => setShowTesterDropdown(!showTesterDropdown)}
+                    onClick={() => toggleDropdown("tester")}
                     className="w-full px-3 py-2 text-[13px] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-700 text-zinc-900 dark:text-zinc-100 flex items-center justify-between hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
                   >
                     <span className={useAITester || testerId ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400 dark:text-zinc-600"}>
@@ -285,10 +303,10 @@ export function CreateTaskModal({
                       <div className="max-h-48 overflow-y-auto">
                         {employees.map((emp) => (
                           <button
-                            key={emp.id}
-                            onClick={() => handleTesterSelect(emp.id)}
+                            key={emp.user_id}
+                            onClick={() => handleTesterSelect(emp.user_id)}
                             className={`w-full px-3 py-2 text-[13px] text-left hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-3 ${
-                              testerId === emp.id && !useAITester ? "bg-zinc-100 dark:bg-zinc-800" : ""
+                              testerId === emp.user_id && !useAITester ? "bg-zinc-100 dark:bg-zinc-800" : ""
                             }`}
                           >
                             <div className="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center shrink-0">
@@ -314,7 +332,7 @@ export function CreateTaskModal({
                   <label className="text-[11px] text-zinc-600 dark:text-zinc-400 block mb-2">Priority *</label>
                   <div className="relative">
                     <button
-                      onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
+                      onClick={() => toggleDropdown("priority")}
                       className="w-full px-3 py-2 text-[13px] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-md text-zinc-900 dark:text-zinc-100 flex items-center justify-between hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
                     >
                       <span className={selectedPriority ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400 dark:text-zinc-600"}>
@@ -353,7 +371,7 @@ export function CreateTaskModal({
                   <label className="text-[11px] text-zinc-600 dark:text-zinc-400 block mb-2">Difficulty</label>
                   <div className="relative">
                     <button
-                      onClick={() => setShowDifficultyDropdown(!showDifficultyDropdown)}
+                      onClick={() => toggleDropdown("difficulty")}
                       className="w-full px-3 py-2 text-[13px] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-md text-zinc-900 dark:text-zinc-100 flex items-center justify-between hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
                     >
                       <span className={useAIDifficulty || difficulty ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400 dark:text-zinc-600"}>
@@ -448,7 +466,7 @@ export function CreateTaskModal({
             </button>
             <button
               onClick={handleCreate}
-              disabled={!title.trim() || (!assigneeId && !useAI) || (!testerId && !useAITester) || !priorityId || createTask.isPending}
+              disabled={!title.trim() || createTask.isPending}
               className="text-[12px] px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-zinc-100 dark:text-zinc-900 rounded-md hover:bg-zinc-700 dark:hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {createTask.isPending ? "Creating…" : "Create task"}
