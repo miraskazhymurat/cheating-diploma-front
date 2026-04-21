@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const BASE_URL = "http://192.168.100.32:8080";
+export const BASE_URL = "https://ai-task-team-manager.onrender.com";
 
 export const axiosInstance = axios.create({
   baseURL: BASE_URL,
