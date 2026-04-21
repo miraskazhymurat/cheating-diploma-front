@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-let domain = "http://192.168.100.22:8080";
+let is_local = true;
+let domain = is_local ? "http://192.168.100.32:8080" : "http://localhost:7777";
 const Url = `${domain}`;
 
 // Create axios instance with token
@@ -44,4 +45,28 @@ export default class Api {
     static isAuthenticated() {
         return !!localStorage.getItem('authToken');
     }
+
+    static getCurrentUser() {
+        const token = localStorage.getItem('authToken');
+        if (!token) return null;
+
+        return axiosInstance.get(`${Url}/auth/me`)
+            .then(response => response.data);
+    }
+
+    static getDashboardData() {
+        return axiosInstance.get(`${Url}/dashboard`)
+            .then(response => response.data);
+    }
+
+    static updateProfile(profileData) {
+        return axiosInstance.post(`${Url}/profile/update`, profileData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        })
+            .then(response => response.data);
+    }
+
+    
 }

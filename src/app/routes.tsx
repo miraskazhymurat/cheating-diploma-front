@@ -1,10 +1,11 @@
 import { createBrowserRouter, Navigate } from "react-router";
 import { Boards } from "./pages/Boards";
 import { Dashboard } from "./pages/Dashboard";
-import { TaskDetail } from "./pages/TaskDetail";
 import { BoardSettings } from "./pages/BoardSettings";
 import { Login } from "./pages/Login";
+import { Inbox } from "./pages/Inbox";
 import { Register } from "./pages/Register";
+import { Profile } from "./pages/Profile";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 export const router = createBrowserRouter([
@@ -37,10 +38,18 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/task/:taskId",
+    path: "/inbox",
     element: (
       <ProtectedRoute>
-        <TaskDetail />
+        <Inbox />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/profile",
+    element: (
+      <ProtectedRoute>
+        <Profile />
       </ProtectedRoute>
     ),
   },

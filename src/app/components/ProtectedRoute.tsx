@@ -1,5 +1,6 @@
 import { Navigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
+import { Layout } from "./Layout";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,7 +11,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="h-screen bg-zinc-950 flex items-center justify-center">
         <p className="text-zinc-400">Loading...</p>
       </div>
     );
@@ -20,5 +21,5 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  return <>{children}</>;
+  return <Layout>{children}</Layout>;
 }

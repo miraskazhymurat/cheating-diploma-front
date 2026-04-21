@@ -1,5 +1,6 @@
 export type TaskStatus = "todo" | "in-progress" | "done";
 export type WorkloadLevel = "low" | "normal" | "high";
+export type TaskDifficulty = "easy" | "medium" | "hard";
 
 export interface Task {
   id: string;
@@ -9,6 +10,7 @@ export interface Task {
   status: TaskStatus;
   description?: string;
   boardId: string;
+  difficulty?: TaskDifficulty;
 }
 
 export interface Employee {
@@ -25,6 +27,15 @@ export interface Board {
   description?: string;
   ownerId: string;
   members: string[]; // Employee IDs
+  createdAt: string;
+}
+
+export interface BoardInvite {
+  id: string;
+  boardId: string;
+  fromUserId: string;
+  toUserId: string;
+  status: "pending" | "accepted" | "rejected";
   createdAt: string;
 }
 
@@ -61,6 +72,25 @@ export const boards: Board[] = [
   },
 ];
 
+export const boardInvites: BoardInvite[] = [
+  {
+    id: "1",
+    boardId: "2",
+    fromUserId: "2",
+    toUserId: "1",
+    status: "pending",
+    createdAt: "2026-04-03",
+  },
+  {
+    id: "2",
+    boardId: "3",
+    fromUserId: "3",
+    toUserId: "1",
+    status: "pending",
+    createdAt: "2026-04-04",
+  },
+];
+
 export const tasks: Task[] = [
   {
     id: "1",
@@ -70,6 +100,7 @@ export const tasks: Task[] = [
     status: "in-progress",
     description: "Update the user dashboard with new design system and components. Focus on improving usability and visual hierarchy.",
     boardId: "1",
+    difficulty: "hard",
   },
   {
     id: "2",
@@ -79,6 +110,7 @@ export const tasks: Task[] = [
     status: "in-progress",
     description: "Users are experiencing issues with login. Need to debug and fix authentication flow.",
     boardId: "1",
+    difficulty: "medium",
   },
   {
     id: "3",
@@ -88,6 +120,7 @@ export const tasks: Task[] = [
     status: "todo",
     description: "Add dark mode support across the application with a toggle in settings.",
     boardId: "1",
+    difficulty: "easy",
   },
   {
     id: "4",
@@ -97,6 +130,7 @@ export const tasks: Task[] = [
     status: "in-progress",
     description: "Improve performance by optimizing slow database queries identified in production.",
     boardId: "1",
+    difficulty: "hard",
   },
   {
     id: "5",
@@ -106,6 +140,7 @@ export const tasks: Task[] = [
     status: "done",
     description: "Complete documentation for all API endpoints with examples and response codes.",
     boardId: "1",
+    difficulty: "easy",
   },
   {
     id: "6",
@@ -115,6 +150,7 @@ export const tasks: Task[] = [
     status: "done",
     description: "Update all project dependencies to their latest stable versions.",
     boardId: "1",
+    difficulty: "easy",
   },
   {
     id: "7",
@@ -124,6 +160,7 @@ export const tasks: Task[] = [
     status: "todo",
     description: "Design and implement a user onboarding flow for new users.",
     boardId: "1",
+    difficulty: "hard",
   },
   {
     id: "8",
@@ -133,6 +170,7 @@ export const tasks: Task[] = [
     status: "todo",
     description: "Implement email notification system for important user events.",
     boardId: "1",
+    difficulty: "medium",
   },
   {
     id: "9",
@@ -142,6 +180,7 @@ export const tasks: Task[] = [
     status: "in-progress",
     description: "Plan and schedule Q2 social media posts.",
     boardId: "2",
+    difficulty: "medium",
   },
   {
     id: "10",
@@ -151,6 +190,7 @@ export const tasks: Task[] = [
     status: "todo",
     description: "Design and send product launch email to subscriber list.",
     boardId: "2",
+    difficulty: "medium",
   },
   {
     id: "11",
@@ -160,6 +200,7 @@ export const tasks: Task[] = [
     status: "in-progress",
     description: "Configure automated deployment pipeline.",
     boardId: "3",
+    difficulty: "hard",
   },
   {
     id: "12",
@@ -169,6 +210,7 @@ export const tasks: Task[] = [
     status: "todo",
     description: "Implement server health monitoring and alerts.",
     boardId: "3",
+    difficulty: "medium",
   },
 ];
 
@@ -187,3 +229,8 @@ export const insights: Insight[] = [
 
 // Helper to get current user (simulated)
 export const getCurrentUser = () => employees[0]; // Alex
+
+// Helper to get pending invites for current user
+export const getPendingInvites = (userId: string) => {
+  return boardInvites.filter((invite) => invite.toUserId === userId && invite.status === "pending");
+};
