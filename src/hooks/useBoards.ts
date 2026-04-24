@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { boardApi } from "../api/board";
 import type { CreateBoardRequest } from "../api/types";
+import type { NotionImportRequest } from "../api/board";
 
 export function useDashboard() {
   return useQuery({
@@ -31,6 +32,16 @@ export function useImportNotionBoard() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (notionDatabaseId: string) => boardApi.importFromNotion(notionDatabaseId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+export function useImportNotionV2() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: NotionImportRequest) => boardApi.importFromNotionV2(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },

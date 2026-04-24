@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router";
 import { useState } from "react";
 import { Sun, Moon } from "lucide-react";
-import Api from "../../api/Api.js";
+import { authApi } from "../../api/auth";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 
@@ -16,22 +16,21 @@ export function Login() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    Api.login({ email, password })
+    authApi.login(email, password)
       .then((response) => {
-        if (response.data.token) {
-          const userData = {
-            id: response.data.id || response.data.user_id || "",
-            name: response.data.name || response.data.full_name || "",
-            email: response.data.email || email,
-          };
-          login(response.data.token, userData);
+        if (response.token) {
+          login(response.token, {
+            id: response.user_id,
+            name: response.full_name || "",
+            email: response.email || email,
+          });
           navigate("/boards");
         } else {
           setError("Login response invalid");
         }
       })
-      .catch((err) => {
-        setError(err.response?.data?.message || "Login failed");
+      .catch((err: Error) => {
+        setError(err.message || "Login failed");
       });
   };
 

@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { chatApi } from "../api/chat";
+import { chatApi, type SendMessageParams } from "../api/chat";
 
-export function useChatMessages(boardId: number) {
+export function useChatMessages(boardId: number, limit = 50, offset = 0) {
   return useQuery({
-    queryKey: ["chat", boardId],
-    queryFn: () => chatApi.getMessages(boardId),
+    queryKey: ["chat", boardId, limit, offset],
+    queryFn: () => chatApi.getMessages(boardId, limit, offset),
     enabled: boardId > 0,
   });
 }
@@ -12,7 +12,7 @@ export function useChatMessages(boardId: number) {
 export function useSendMessage(boardId: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (content: string) => chatApi.sendMessage(boardId, content),
+    mutationFn: (params: SendMessageParams) => chatApi.sendMessage(boardId, params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chat", boardId] });
     },

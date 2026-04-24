@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import Api from "../../api/Api";
+import { queryClient } from "../queryClient";
 
 export interface User {
   id: number;
@@ -49,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserState(null);
     localStorage.removeItem("authToken");
     localStorage.removeItem("user");
+    queryClient.clear();
   };
 
   const setUser = (userData: User) => {
