@@ -3,10 +3,9 @@ import type { BoardStatusResponse } from "./types";
 
 export const statusApi = {
   getBoardStatuses: async (boardId: number): Promise<BoardStatusResponse[]> => {
-    const { data } = await axiosInstance.get<{ success: boolean; data: BoardStatusResponse[] }>(
-      `/boards/${boardId}/statuses`
-    );
-    return data;
+    const res = await axiosInstance.get(`/boards/${boardId}/statuses`);
+    const data = (res as any)?.data ?? res;
+    return Array.isArray(data) ? data : [];
   },
 
   create: async (payload: { board_id: number; title: string }): Promise<BoardStatusResponse> => {

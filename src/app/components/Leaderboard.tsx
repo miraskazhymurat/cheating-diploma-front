@@ -21,11 +21,11 @@ export function Leaderboard({ employees }: LeaderboardProps) {
       {topThree.map((employee, index) => (
         <div
           key={employee.id}
-          className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-zinc-900/30 transition-colors"
+          className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/50 transition-colors"
         >
           <Trophy className={`w-3.5 h-3.5 ${medalColors[index]} shrink-0`} />
-          <span className="text-[13px] text-zinc-100 flex-1">{employee.name}</span>
-          <span className="text-[12px] text-zinc-400 tabular-nums">{employee.score}</span>
+          <span className="text-[13px] text-foreground flex-1">{employee.name}</span>
+          <span className="text-[12px] text-muted-foreground tabular-nums">{employee.score}</span>
         </div>
       ))}
     </div>

@@ -22,11 +22,11 @@ export function TeamWorkload({ employees }: TeamWorkloadProps) {
       {employees.map((employee) => (
         <div
           key={employee.id}
-          className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-zinc-900/30 transition-colors"
+          className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/50 transition-colors"
         >
           <div className={`w-1.5 h-1.5 rounded-full ${workloadColors[employee.workload]} shrink-0`} />
-          <span className="text-[13px] text-zinc-100 flex-1">{employee.name}</span>
-          <span className="text-[11px] text-zinc-500">{workloadLabels[employee.workload]}</span>
+          <span className="text-[13px] text-foreground flex-1">{employee.name}</span>
+          <span className="text-[11px] text-muted-foreground">{workloadLabels[employee.workload]}</span>
         </div>
       ))}
     </div>

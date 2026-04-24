@@ -18,8 +18,8 @@ export const employeeApi = {
   },
 
   getByBoardId: async (id: number): Promise<EmployeeResponse[]> => {
-    const { data } = await axiosInstance.get<EmployeeResponse[]>(`/boards/${id}/members`);
-    return data;
+    const res = await axiosInstance.get(`/boards/${id}/members`);
+    return ((res as any).data ?? res) as EmployeeResponse[];
   },
 
   create: async (formData: FormData): Promise<void> => {
@@ -36,6 +36,10 @@ export const employeeApi = {
 
   deleteMember: async (boardMemberId: number): Promise<void> => {
     await axiosInstance.delete(`/board-members/${boardMemberId}`);
-  }
+  },
 
+  getActivities: async (): Promise<{ activities: { date: string; count: number }[]; total_contributions: number; total_active_days: number; max_streak: number; current_streak: number }> => {
+    const res = await axiosInstance.get<{ success: boolean; data: { activities: { date: string; count: number }[]; total_contributions: number; total_active_days: number } }>("/employees/me/activities");
+    return (res as any).data ?? res;
+  },
 };

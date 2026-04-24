@@ -20,4 +20,11 @@ export const boardApi = {
   delete: async (id: number): Promise<void> => {
     await axiosInstance.delete(`/boards/${id}`);
   },
+
+  importFromNotion: async (notionDatabaseId: string): Promise<BoardResponse> => {
+    const { data } = await axiosInstance.post<BoardResponse>("/boards/notion", {
+      notion_database_id: notionDatabaseId,
+    });
+    return data;
+  },
 };

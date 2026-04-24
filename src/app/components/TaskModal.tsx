@@ -1,10 +1,26 @@
-import { X, Clock, Trash2, Paperclip, Pencil } from "lucide-react";
-import { type UITask, type BoardStatusResponse, type EmployeeResponse } from "../../api/types";
+import { X, Clock, Trash2, Paperclip, Pencil, Sparkles, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import { type UITask, type BoardStatusResponse, type EmployeeResponse, type TimeEstimateResponse } from "../../api/types";
 import { Badge } from "./ui/badge";
 import { useEffect, useRef, useState } from "react";
-import { useUpdateTask, useDeleteAttachment, useUploadAttachment, useDeleteTask } from "../../hooks/useTasks";
+import { useUpdateTask, useDeleteAttachment, useUploadAttachment, useDeleteTask, useEstimateTaskTime } from "../../hooks/useTasks";
 import { useTaskComments, useAddComment, useDeleteComment } from "../../hooks/useComments";
 import { useBoardEmployees } from "../../hooks/useEmployee";
+
+const ESTIMATE_STORAGE_KEY = (taskId: number) => `task_ai_estimate_${taskId}`;
+
+function loadStoredEstimate(taskId: number): TimeEstimateResponse | null {
+  try {
+    const raw = localStorage.getItem(ESTIMATE_STORAGE_KEY(taskId));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveEstimate(taskId: number, estimate: TimeEstimateResponse) {
+  localStorage.setItem(ESTIMATE_STORAGE_KEY(taskId), JSON.stringify(estimate));
+}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -83,8 +99,8 @@ function PersonCard({
           </button>
           {members.map((m) => (
             <button
-              key={m.id}
-              onClick={() => { onSelect(m.id); setOpen(false); }}
+              key={m.user_id}
+              onClick={() => { onSelect(m.user_id); setOpen(false); }}
               className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
             >
               <Avatar photo={m.photo} name={m.full_name} size={5} />
@@ -198,6 +214,16 @@ interface TaskModalProps {
 
 export function TaskModal({ task, isOpen, onClose, boardId, statuses = [] }: TaskModalProps) {
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [showEstimatePopover, setShowEstimatePopover] = useState(false);
+  const estimateLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const onEstimateEnter = () => {
+    if (estimateLeaveTimer.current) clearTimeout(estimateLeaveTimer.current);
+    setShowEstimatePopover(true);
+  };
+  const onEstimateLeave = () => {
+    estimateLeaveTimer.current = setTimeout(() => setShowEstimatePopover(false), 120);
+  };
   const [commentText, setCommentText] = useState("");
   const [attachments, setAttachments] = useState(task.attachments);
   const [title, setTitle] = useState(task.title);
@@ -211,10 +237,15 @@ export function TaskModal({ task, isOpen, onClose, boardId, statuses = [] }: Tas
   const [testerPhoto, setTesterPhoto] = useState(task.testerPhoto);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [aiEstimate, setAiEstimate] = useState<TimeEstimateResponse | null>(
+    () => loadStoredEstimate(task.backendId)
+  );
+
   const updateTask = useUpdateTask(boardId ?? 0);
   const deleteAttachment = useDeleteAttachment(boardId ?? 0);
   const uploadAttachment = useUploadAttachment(boardId ?? 0);
   const deleteTask = useDeleteTask(boardId ?? 0);
+  const estimateTime = useEstimateTaskTime();
   const { data: comments = [], isLoading: commentsLoading } = useTaskComments(task.backendId);
   const addComment = useAddComment(task.backendId);
   const deleteComment = useDeleteComment(task.backendId);
@@ -225,19 +256,19 @@ export function TaskModal({ task, isOpen, onClose, boardId, statuses = [] }: Tas
   };
 
   const handleAssigneeSelect = (id: number | undefined) => {
-    const member = members.find((m) => m.id === id);
+    const member = members.find((m) => m.user_id === id);
     setAssigneeId(id);
     setAssigneeName(member?.full_name ?? "");
     setAssigneePhoto(member?.photo);
-    patch({ assignee_id: id });
+    patch({ assignee_id: id ?? null });
   };
 
   const handleTesterSelect = (id: number | undefined) => {
-    const member = members.find((m) => m.id === id);
+    const member = members.find((m) => m.user_id === id);
     setTesterId(id);
     setTesterName(member?.full_name);
     setTesterPhoto(member?.photo);
-    patch({ tester_id: id });
+    patch({ tester_id: id ?? null });
   };
 
   const handleStatusSelect = (s: BoardStatusResponse) => {
@@ -260,6 +291,15 @@ export function TaskModal({ task, isOpen, onClose, boardId, statuses = [] }: Tas
     setAttachments((prev) => prev.filter((a) => a.id !== id));
     deleteAttachment.mutate(id, {
       onError: () => setAttachments(task.attachments),
+    });
+  };
+
+  const handleEstimate = () => {
+    estimateTime.mutate(task.backendId, {
+      onSuccess: (result) => {
+        setAiEstimate(result);
+        saveEstimate(task.backendId, result);
+      },
     });
   };
 
@@ -331,11 +371,51 @@ export function TaskModal({ task, isOpen, onClose, boardId, statuses = [] }: Tas
                     <span>{task.estimatedTime}</span>
                   </div>
                 )}
+
+                {/* AI estimate chip */}
+                <div className="relative" onMouseEnter={onEstimateEnter} onMouseLeave={onEstimateLeave}>
+                  {estimateTime.isPending ? (
+                    <div className="flex items-center gap-1.5 text-[11px] px-2 h-5 rounded border bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-400">
+                      <div className="w-2 h-2 border border-zinc-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                      Estimating…
+                    </div>
+                  ) : aiEstimate ? (
+                    <>
+                      <div className="flex items-center gap-1 text-[11px] px-2 h-5 rounded border bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 cursor-default select-none">
+                        <Sparkles className="w-2.5 h-2.5 text-violet-400 dark:text-violet-500 shrink-0" />
+                        {aiEstimate.estimated_label} · {aiEstimate.estimated_hours}h
+                      </div>
+                      {showEstimatePopover && (
+                        <div className="absolute top-6 left-0 z-20 w-60 p-3 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg">
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed mb-2.5">{aiEstimate.explanation}</p>
+                          <button
+                            onClick={handleEstimate}
+                            className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            Re-estimate
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      onClick={handleEstimate}
+                      className="flex items-center gap-1 text-[11px] px-2 h-5 rounded border border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-400 hover:text-zinc-500 dark:hover:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors"
+                    >
+                      <Sparkles className="w-2.5 h-2.5" />
+                      Estimate time
+                    </button>
+                  )}
+                  {estimateTime.isError && (
+                    <p className="absolute top-6 left-0 text-[11px] text-red-400 whitespace-nowrap">Failed — try again</p>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <button
-                onClick={() => deleteTask.mutate(task.backendId, { onSuccess: onClose })}
+                onClick={() => deleteTask.mutate(task.backendId, { onSuccess: () => { onClose(); toast.success("Task deleted"); } })}
                 disabled={deleteTask.isPending}
                 className="text-zinc-500 hover:text-red-400 transition-colors p-1"
                 title="Delete task"
@@ -390,6 +470,7 @@ export function TaskModal({ task, isOpen, onClose, boardId, statuses = [] }: Tas
                 onSave={(v) => { setDescription(v); patch({ description: v }); }}
               />
             </div>
+
 
             {/* Attachments */}
             <div>
