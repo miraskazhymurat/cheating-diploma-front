@@ -17,7 +17,7 @@ export interface EmployeeResponse {
   phone_number: string;
   birthday: string;
   team: { id: number; name: string; code: string };
-  gender: { id: number; name: string; code: string };
+  gender: { id?: number; ID?: number; name?: string; Name?: string; code?: string; Code?: string };
 }
 
 export interface BoardResponse {
@@ -86,6 +86,12 @@ export interface InviteResponse {
   created_at: string;
 }
 
+export interface TimeEstimateResponse {
+  estimated_hours: number;
+  estimated_label: string;
+  explanation: string;
+}
+
 // ─── Request types ──────────────────────────────────────────────────────────
 
 export interface CreateBoardRequest {
@@ -109,8 +115,8 @@ export interface UpdateTaskRequest {
   status_id?: number;
   priority_id?: number;
   difficulty_id?: number;
-  assignee_id?: number;
-  tester_id?: number;
+  assignee_id?: number | null;
+  tester_id?: number | null;
   time_spent?: number;
 }
 

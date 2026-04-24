@@ -26,8 +26,8 @@ export function Header() {
   const photoUrl = employee?.photo ?? null;
 
   return (
-    <header className="border-b border-zinc-200/50 dark:border-zinc-800/50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+    <header className="border-b border-zinc-200/50 dark:border-zinc-800/50 bg-card/90 dark:bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-2">
         {/* Logo */}
         <Link to="/boards" className="flex items-center gap-2 group">
           <div className="w-6 h-6 rounded bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center">
@@ -60,7 +60,7 @@ export function Header() {
           >
             <span className="flex items-center gap-1.5">
               <Inbox className="w-3.5 h-3.5" />
-              Inbox
+              <span className="hidden sm:inline">Inbox</span>
             </span>
             {pendingCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-blue-500 text-white text-[9px] rounded-full flex items-center justify-center">
@@ -95,7 +95,7 @@ export function Header() {
                 <span className="text-[11px] font-medium text-zinc-700 dark:text-zinc-200">{initial}</span>
               )}
             </div>
-            <span className="text-[12px] text-zinc-700 dark:text-zinc-300">{displayName}</span>
+            <span className="hidden sm:block text-[12px] text-zinc-700 dark:text-zinc-300">{displayName}</span>
           </Link>
 
           <button

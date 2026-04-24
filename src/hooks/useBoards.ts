@@ -27,6 +27,16 @@ export function useCreateBoard() {
   });
 }
 
+export function useImportNotionBoard() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (notionDatabaseId: string) => boardApi.importFromNotion(notionDatabaseId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
 export function useDeleteBoard() {
   const queryClient = useQueryClient();
   return useMutation({

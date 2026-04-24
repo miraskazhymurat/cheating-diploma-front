@@ -154,23 +154,24 @@ export function BoardView({ boardId, tasks, statuses = [] }: BoardViewProps) {
       { statusId: -3, title: "Done", color: undefined, tasks: tasks.filter((t) => t.status === "done") },
     ];
 
-  const gridCols = columns.length <= 3 ? "md:grid-cols-3" : columns.length === 4 ? "md:grid-cols-4" : "md:grid-cols-3 lg:grid-cols-5";
-
   return (
     <>
       <DndProvider backend={HTML5Backend}>
-        <div className={`grid grid-cols-1 ${gridCols} gap-4`}>
-          {columns.map((col) => (
-            <DroppableColumn
-              key={col.statusId}
-              statusId={col.statusId}
-              title={col.title}
-              color={col.color}
-              tasks={col.tasks}
-              onDrop={handleDrop}
-              onTaskClick={(task) => setSelectedTaskId(task.backendId)}
-            />
-          ))}
+        <div className="md:overflow-x-auto pb-3">
+          <div className="flex flex-col gap-4 md:flex-row">
+            {columns.map((col) => (
+              <div key={col.statusId} className="w-full md:w-64 md:shrink-0">
+                <DroppableColumn
+                  statusId={col.statusId}
+                  title={col.title}
+                  color={col.color}
+                  tasks={col.tasks}
+                  onDrop={handleDrop}
+                  onTaskClick={(task) => setSelectedTaskId(task.backendId)}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </DndProvider>
 

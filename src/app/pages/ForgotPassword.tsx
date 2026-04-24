@@ -1,29 +1,25 @@
-import { Link } from "react-router";
 import { useState } from "react";
+import { Link } from "react-router";
 import { Mail, CheckCircle2, Sun, Moon } from "lucide-react";
-import { authApi } from "../../api/auth";
+import { axiosInstance } from "../../api/axiosInstance";
 import { useTheme } from "../context/ThemeContext";
 
-export function Register() {
+export function ForgotPassword() {
   const { theme, toggleTheme } = useTheme();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showVerification, setShowVerification] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (e: { preventDefault(): void }) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
     try {
-      await authApi.register(email, password);
-      setRegisteredEmail(email);
-      setShowVerification(true);
+      await axiosInstance.post("/auth/forgot-password", { email });
+      setSent(true);
     } catch (err: any) {
-      setError(err.response?.data?.message ?? "Registration failed. Try again.");
+      setError(err.message ?? "Something went wrong");
     } finally {
       setIsLoading(false);
     }
@@ -39,7 +35,7 @@ export function Register() {
     </button>
   );
 
-  if (showVerification) {
+  if (sent) {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex items-center justify-center px-6">
         {themeToggle}
@@ -53,9 +49,9 @@ export function Register() {
           <div className="mb-6">
             <h1 className="text-[15px] text-zinc-900 dark:text-zinc-100 mb-2">Check your email</h1>
             <p className="text-[13px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              We've sent a verification link to
+              We've sent a password reset link to
             </p>
-            <p className="text-[13px] text-zinc-900 dark:text-zinc-100 mt-1">{registeredEmail}</p>
+            <p className="text-[13px] text-zinc-900 dark:text-zinc-100 mt-1">{email}</p>
           </div>
 
           <div className="mb-8 p-4 rounded-lg bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800">
@@ -63,8 +59,7 @@ export function Register() {
               <Mail className="w-4 h-4 text-zinc-500 dark:text-zinc-400 mt-0.5 shrink-0" />
               <div>
                 <p className="text-[12px] text-zinc-700 dark:text-zinc-300 mb-2">
-                  Please verify your email before logging in. Click the link in
-                  the email to activate your account.
+                  Click the link in the email to reset your password. The link will expire in 24 hours.
                 </p>
                 <p className="text-[11px] text-zinc-500">
                   Didn't receive the email? Check your spam folder.
@@ -78,10 +73,10 @@ export function Register() {
               to="/login"
               className="block w-full px-4 py-2 text-[13px] bg-zinc-900 dark:bg-zinc-100 text-zinc-100 dark:text-zinc-900 rounded-md hover:bg-zinc-700 dark:hover:bg-white transition-colors"
             >
-              Go to login
+              Back to sign in
             </Link>
             <button
-              onClick={() => setShowVerification(false)}
+              onClick={() => setSent(false)}
               className="block w-full px-4 py-2 text-[12px] text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-100 transition-colors"
             >
               Try different email
@@ -97,8 +92,8 @@ export function Register() {
       {themeToggle}
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-[15px] text-zinc-900 dark:text-zinc-100 mb-1">Create account</h1>
-          <p className="text-[12px] text-zinc-500">Start managing tasks with AI</p>
+          <h1 className="text-[15px] text-zinc-900 dark:text-zinc-100 mb-1">Forgot password</h1>
+          <p className="text-[12px] text-zinc-500">Enter your email and we'll send you a reset link.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -121,42 +116,19 @@ export function Register() {
               required
             />
           </div>
-
-          <div>
-            <label htmlFor="password" className="block text-[11px] text-zinc-600 dark:text-zinc-400 mb-2">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 text-[13px] bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-700 focus:border-zinc-400 dark:focus:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
-              placeholder="••••••••"
-              required
-              minLength={8}
-            />
-            <p className="mt-1.5 text-[11px] text-zinc-400 dark:text-zinc-600">
-              Must be at least 8 characters
-            </p>
-          </div>
-
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full px-4 py-2 text-[13px] bg-zinc-900 dark:bg-zinc-100 text-zinc-100 dark:text-zinc-900 rounded-md hover:bg-zinc-700 dark:hover:bg-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2 text-[13px] bg-zinc-900 dark:bg-zinc-100 text-zinc-100 dark:text-zinc-900 rounded-md hover:bg-zinc-700 dark:hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? "Creating account…" : "Create account"}
+            {isLoading ? "Sending…" : "Send reset link"}
           </button>
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-[12px] text-zinc-500">
-            Already have an account?{" "}
-            <Link to="/login" className="text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-              Sign in
-            </Link>
-          </p>
+          <Link to="/login" className="text-[12px] text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+            Back to sign in
+          </Link>
         </div>
       </div>
     </div>

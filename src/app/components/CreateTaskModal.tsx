@@ -333,7 +333,7 @@ export function CreateTaskModal({
                   <div className="relative">
                     <button
                       onClick={() => toggleDropdown("priority")}
-                      className="w-full px-3 py-2 text-[13px] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-md text-zinc-900 dark:text-zinc-100 flex items-center justify-between hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
+                      className="w-full px-3 py-2 text-[13px] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-700 focus:border-zinc-400 dark:focus:border-zinc-700 text-zinc-900 dark:text-zinc-100 flex items-center justify-between hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
                     >
                       <span className={selectedPriority ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400 dark:text-zinc-600"}>
                         {selectedPriority ? (
@@ -372,7 +372,7 @@ export function CreateTaskModal({
                   <div className="relative">
                     <button
                       onClick={() => toggleDropdown("difficulty")}
-                      className="w-full px-3 py-2 text-[13px] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-md text-zinc-900 dark:text-zinc-100 flex items-center justify-between hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
+                      className="w-full px-3 py-2 text-[13px] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-700 focus:border-zinc-400 dark:focus:border-zinc-700 text-zinc-900 dark:text-zinc-100 flex items-center justify-between hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
                     >
                       <span className={useAIDifficulty || difficulty ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400 dark:text-zinc-600"}>
                         {useAIDifficulty ? (

@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { employeeApi } from "../api/employee";
 
+export function useEmployeeActivities() {
+  return useQuery({
+    queryKey: ["employee", "activities"],
+    queryFn: employeeApi.getActivities,
+  });
+}
+
 export function useMe() {
   return useQuery({
     queryKey: ["employee", "me"],

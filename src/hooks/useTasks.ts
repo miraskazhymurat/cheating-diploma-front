@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { taskApi } from "../api/task";
-import type { CreateTaskRequest, TaskResponse, UpdateTaskRequest } from "../api/types";
+import type { CreateTaskRequest, TaskResponse, TimeEstimateResponse, UpdateTaskRequest } from "../api/types";
 
 export function useBoardTasks(boardId: number) {
   return useQuery({
@@ -70,6 +70,12 @@ export function useDeleteTask(boardId: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", boardId] });
     },
+  });
+}
+
+export function useEstimateTaskTime() {
+  return useMutation<TimeEstimateResponse, Error, number>({
+    mutationFn: (taskId: number) => taskApi.estimateTime(taskId),
   });
 }
 

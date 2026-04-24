@@ -1,5 +1,5 @@
 import { axiosInstance } from "./axiosInstance";
-import type { AttachmentResponse, CreateTaskRequest, TaskResponse, UpdateTaskRequest } from "./types";
+import type { AttachmentResponse, CreateTaskRequest, TaskResponse, TimeEstimateResponse, UpdateTaskRequest } from "./types";
 
 export const taskApi = {
   getBoardTasks: async (boardId: number): Promise<TaskResponse[]> => {
@@ -51,6 +51,13 @@ export const taskApi = {
     const { data } = await axiosInstance.patch<TaskResponse>(
       `/tasks/${taskId}`,
       payload
+    );
+    return data;
+  },
+
+  estimateTime: async (taskId: number): Promise<TimeEstimateResponse> => {
+    const { data } = await axiosInstance.post<TimeEstimateResponse>(
+      `/tasks/${taskId}/estimate-time`
     );
     return data;
   },

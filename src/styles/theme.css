@@ -1,44 +1,99 @@
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * ─── LIGHT MODE THEME ────────────────────────────────────────────────────────
+ *
+ * All colors are defined here as CSS variables — change any value below
+ * and the whole UI updates instantly. No developer needed.
+ *
+ * Tips:
+ *   - Use https://coolors.co or https://oklch.com to pick colors visually
+ *   - Keep foreground colors dark enough for contrast on the background
+ *   - The "muted" colors are used for placeholders and secondary text
+ *   - "destructive" is used for delete/error actions (usually red)
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
 :root {
   --font-size: 16px;
-  --background: #e8ebe5;
-  --foreground: #2d3a2e;
-  --card: #f2f4f0;
-  --card-foreground: #2d3a2e;
-  --popover: #f2f4f0;
-  --popover-foreground: #2d3a2e;
-  --primary: #4a6b4f;
-  --primary-foreground: #f2f4f0;
-  --secondary: #d4dbd1;
-  --secondary-foreground: #2d3a2e;
-  --muted: #d4dbd1;
-  --muted-foreground: #6b7a6d;
-  --accent: #c9d4c5;
-  --accent-foreground: #2d3a2e;
-  --destructive: #b54747;
-  --destructive-foreground: #f2f4f0;
-  --border: rgba(74, 107, 79, 0.15);
+
+  /* ── Page background ─────────────────────────────────────────────────────── */
+  /* Soft warm off-white — easier on eyes than pure white (#ffffff)            */
+  --background: #F7F5F2;
+
+  /* ── Main text color ─────────────────────────────────────────────────────── */
+  /* Dark warm gray — softer than pure black (#000000)                         */
+  --foreground: #2C2C2C;
+
+  /* ── Cards / panels (modals, dropdowns, sidebar sections) ───────────────── */
+  /* Slightly brighter than background so cards visually lift off the page    */
+  --card: #FFFFFF;
+  --card-foreground: #2C2C2C;
+
+  /* ── Popovers / tooltips ─────────────────────────────────────────────────── */
+  --popover: #FFFFFF;
+  --popover-foreground: #2C2C2C;
+
+  /* ── Primary action color (buttons, links, active states) ───────────────── */
+  /* Muted slate-blue — calm, professional, not too saturated                 */
+  --primary: #3D5A80;
+  --primary-foreground: #FFFFFF;
+
+  /* ── Secondary / less-prominent interactive elements ────────────────────── */
+  --secondary: #E8E4DF;
+  --secondary-foreground: #2C2C2C;
+
+  /* ── Muted backgrounds (disabled states, subtle fills) ──────────────────── */
+  --muted: #EDE9E4;
+  --muted-foreground: #7A7369;       /* gray-brown for placeholder/hint text  */
+
+  /* ── Accent (hover highlights, selected rows) ───────────────────────────── */
+  --accent: #E2DCF5;                 /* light lavender — subtle & eye-friendly */
+  --accent-foreground: #2C2C2C;
+
+  /* ── Destructive / danger (delete buttons, error messages) ──────────────── */
+  /* Desaturated red — visible without being alarming                         */
+  --destructive: #C0392B;
+  --destructive-foreground: #FFFFFF;
+
+  /* ── Borders ─────────────────────────────────────────────────────────────── */
+  /* Keep light — just enough to separate sections                            */
+  --border: rgba(0, 0, 0, 0.08);
+
+  /* ── Form inputs ─────────────────────────────────────────────────────────── */
   --input: transparent;
-  --input-background: #d4dbd1;
-  --switch-background: #a8b5a5;
+  --input-background: #EDE9E4;       /* warm light gray input fill            */
+
+  /* ── Toggle / switch track ───────────────────────────────────────────────── */
+  --switch-background: #B0AAA0;
+
+  /* ── Focus ring (keyboard navigation outline) ───────────────────────────── */
+  --ring: #3D5A80;
+
+  /* ── Font weights ────────────────────────────────────────────────────────── */
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #8a9d8c;
-  --chart-1: oklch(0.65 0.15 135);
-  --chart-2: oklch(0.62 0.12 200);
-  --chart-3: oklch(0.58 0.10 85);
-  --chart-4: oklch(0.68 0.13 160);
-  --chart-5: oklch(0.60 0.14 110);
+
+  /* ── Chart colors (used in graphs/statistics if any) ────────────────────── */
+  --chart-1: oklch(0.55 0.14 250);   /* blue   */
+  --chart-2: oklch(0.60 0.12 160);   /* teal   */
+  --chart-3: oklch(0.58 0.13 80);    /* amber  */
+  --chart-4: oklch(0.55 0.14 310);   /* purple */
+  --chart-5: oklch(0.56 0.15 30);    /* orange */
+
+  /* ── Border radius ───────────────────────────────────────────────────────── */
+  /* Increase this (e.g. 1rem) for rounder corners, decrease (0) for sharp   */
   --radius: 0.625rem;
-  --sidebar: #d4dbd1;
-  --sidebar-foreground: #2d3a2e;
-  --sidebar-primary: #4a6b4f;
-  --sidebar-primary-foreground: #f2f4f0;
-  --sidebar-accent: #c2cdbf;
-  --sidebar-accent-foreground: #2d3a2e;
-  --sidebar-border: #b8c4b5;
-  --sidebar-ring: #8a9d8c;
+
+  /* ── Sidebar ─────────────────────────────────────────────────────────────── */
+  --sidebar: #EDE9E4;
+  --sidebar-foreground: #2C2C2C;
+  --sidebar-primary: #3D5A80;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E2DCF5;
+  --sidebar-accent-foreground: #2C2C2C;
+  --sidebar-border: rgba(0, 0, 0, 0.07);
+  --sidebar-ring: #3D5A80;
 }
 
 .dark {
@@ -177,5 +232,13 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
+  }
+
+  /* iOS Safari zooms in on any input/textarea/select with font-size < 16px.
+     Force 16px on mobile so the viewport never scales on focus. */
+  @media (max-width: 640px) {
+    input, textarea, select {
+      font-size: 16px !important;
+    }
   }
 }

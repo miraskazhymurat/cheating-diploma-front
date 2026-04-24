@@ -5,7 +5,10 @@ import { BoardSettings } from "./pages/BoardSettings";
 import { Login } from "./pages/Login";
 import { Inbox } from "./pages/Inbox";
 import { Register } from "./pages/Register";
+import { ForgotPassword } from "./pages/ForgotPassword";
+import { ResetPassword } from "./pages/ResetPassword";
 import { Profile } from "./pages/Profile";
+import { Meeting } from "./pages/Meeting";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 export const router = createBrowserRouter([
@@ -26,6 +29,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <Dashboard />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/board/:boardId/meeting",
+    element: (
+      <ProtectedRoute>
+        <Meeting />
       </ProtectedRoute>
     ),
   },
@@ -60,5 +71,13 @@ export const router = createBrowserRouter([
   {
     path: "/register",
     element: <Register />,
+  },
+  {
+    path: "/forgot-password",
+    element: <ForgotPassword />,
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPassword />,
   },
 ]);

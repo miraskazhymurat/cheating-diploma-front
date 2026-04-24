@@ -1,11 +1,14 @@
 import { Link, useNavigate } from "react-router";
 import { useState } from "react";
+import { Sun, Moon } from "lucide-react";
 import Api from "../../api/Api.js";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
 export function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -34,6 +37,13 @@ export function Login() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex items-center justify-center px-6">
+      <button
+        onClick={toggleTheme}
+        className="fixed top-4 right-4 p-2 rounded-md text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+        title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      >
+        {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+      </button>
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <h1 className="text-[15px] text-zinc-900 dark:text-zinc-100 mb-1">Welcome back</h1>
@@ -82,6 +92,12 @@ export function Login() {
           >
             Sign in
           </button>
+
+          <div className="text-center">
+            <Link to="/forgot-password" className="text-[12px] text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+              Forgot password?
+            </Link>
+          </div>
         </form>
 
         <div className="mt-6 text-center">
