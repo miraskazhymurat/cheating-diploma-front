@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-let is_local = true;
+let is_local = false;
 let domain = is_local ? "http://192.168.100.32:8080" : "https://ai-task-team-manager.onrender.com";
 const Url = `${domain}`;
 
