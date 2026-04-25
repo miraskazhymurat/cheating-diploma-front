@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Users, Reply, Paperclip, FileText, Play, Pause, Music, Mic, Trash2 } from "lucide-react";
+import { Link } from "react-router";
+import { MessageCircle, X, Send, Users, Reply, Paperclip, FileText, Play, Pause, Music, Mic, Trash2, Video, ChevronsDown } from "lucide-react";
 import { useChatMessages, useSendMessage } from "../../hooks/useChat";
 import { useAuth } from "../context/AuthContext";
 import type { ChatMessage, ChatReplyTo } from "../../api/chat";
@@ -11,7 +12,7 @@ function formatDuration(s: number) {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
-function AudioPlayer({ src, fileName, isOwn }: { src: string; fileName: string; isOwn: boolean }) {
+function AudioPlayer({ src, isOwn }: { src: string; isOwn: boolean }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
@@ -64,12 +65,6 @@ function AudioPlayer({ src, fileName, isOwn }: { src: string; fileName: string; 
       </button>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1 mb-1.5">
-          <Music className={`w-2.5 h-2.5 shrink-0 ${isOwn ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-500 dark:text-zinc-400"}`} />
-          <span className={`text-[10px] truncate ${isOwn ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-500 dark:text-zinc-400"}`}>
-            {fileName}
-          </span>
-        </div>
         <input
           type="range"
           min={0}
@@ -140,30 +135,102 @@ function ReplyBanner({ replyTo, onClear }: { replyTo: ChatReplyTo; onClear: () =
   );
 }
 
+function CircularVideoPlayer({ src }: { src: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [current, setCurrent] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const circumference = 2 * Math.PI * 87;
+  const progress = duration > 0 ? (current / duration) * 100 : 0;
+
+  const toggle = () => {
+    const el = videoRef.current;
+    if (!el) return;
+    playing ? el.pause() : el.play();
+  };
+
+  return (
+    <div className="relative w-[160px] h-[160px]">
+      <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none text-zinc-300 dark:text-zinc-500" viewBox="0 0 180 180">
+        <circle cx="90" cy="90" r="87" fill="none" stroke="currentColor" strokeWidth="5" />
+        <circle
+          cx="90" cy="90" r="87" fill="none" strokeWidth="5"
+          stroke="rgb(63 63 70)"
+          className="dark:[stroke:white] transition-all duration-300"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - progress / 100)}
+        />
+      </svg>
+      <div className="absolute inset-2 rounded-full overflow-hidden bg-zinc-900">
+        <video
+          ref={videoRef}
+          src={src}
+          className="w-full h-full object-cover"
+          playsInline
+          onTimeUpdate={() => setCurrent(videoRef.current?.currentTime ?? 0)}
+          onLoadedMetadata={() => setDuration(videoRef.current?.duration ?? 0)}
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={() => { setPlaying(false); setCurrent(0); if (videoRef.current) videoRef.current.currentTime = 0; }}
+        />
+        <button
+          onClick={toggle}
+          className="absolute inset-0 flex items-center justify-center transition-colors"
+          style={{ background: playing ? "transparent" : "rgba(0,0,0,0.3)" }}
+        >
+          {!playing && <Play className="w-9 h-9 text-white drop-shadow" fill="white" />}
+        </button>
+      </div>
+      {duration > 0 && (
+        <div className="absolute -bottom-5 left-0 right-0 flex justify-center">
+          <span className="text-[10px] text-zinc-500 dark:text-zinc-400 tabular-nums">
+            {formatDuration(playing ? current : duration)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const audioExts = /\.(mp3|wav|ogg|oga|opus|m4a|aac|flac|weba|webm)$/i;
-const isAudio = (mime: string, name: string) => mime.startsWith("audio/") || audioExts.test(name);
+const isAudio = (mime: string, name: string) => !mime.startsWith("video/") && (mime.startsWith("audio/") || audioExts.test(name));
 const isVideo = (mime: string) => mime.startsWith("video/");
-const isMediaBare = (mime: string, name: string) => isAudio(mime, name) || isVideo(mime);
+const isMediaBare = (mime: string, name: string) => isAudio(mime, name) || isVideo(mime) || mime.startsWith("image/");
+
+function scrollToMessage(id: number) {
+  const el = document.getElementById(`chat-msg-${id}`);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.classList.add("chat-highlight");
+  setTimeout(() => el.classList.remove("chat-highlight"), 1200);
+}
 
 function MessageBubble({
   msg,
   isOwn,
   isSameAuthor,
   onReply,
+  boardId,
 }: {
   msg: ChatMessage;
   isOwn: boolean;
   isSameAuthor: boolean;
   onReply: (msg: ChatMessage) => void;
+  boardId: number;
 }) {
   const bareAtts = msg.attachments.filter((a) => isMediaBare(a.mime_type, a.file_name));
   const otherAtts = msg.attachments.filter((a) => !isMediaBare(a.mime_type, a.file_name));
   const hasBubble = !!msg.text || otherAtts.length > 0 || !!msg.reply_to;
 
   return (
-    <div className={`flex gap-2 group ${isOwn ? "flex-row-reverse" : ""}`}>
+    <div id={`chat-msg-${msg.id}`} className={`flex gap-2 group ${isOwn ? "flex-row-reverse" : ""} transition-colors duration-300`}>
       <div className="shrink-0 w-7 h-7 mt-0.5">
-        {!isSameAuthor && <Avatar name={msg.author.full_name} photo={msg.author.photo || undefined} />}
+        {!isSameAuthor && (
+          <Link to={`/profile/${msg.author.id}`} state={{ fromChat: true, boardId }} title={msg.author.full_name}>
+            <Avatar name={msg.author.full_name} photo={msg.author.photo || undefined} />
+          </Link>
+        )}
       </div>
 
       <div className={`flex flex-col max-w-[75%] ${isOwn ? "items-end" : "items-start"}`}>
@@ -178,12 +245,15 @@ function MessageBubble({
 
         <div className={`flex items-end gap-1 ${isOwn ? "flex-row-reverse" : ""}`}>
           <div className="flex flex-col gap-1">
-            {/* Reply preview */}
+            {/* Reply preview — click to jump to original message */}
             {msg.reply_to && (
-              <div className="px-2 py-1.5 rounded-lg border-l-2 border-zinc-400 dark:border-zinc-500 bg-zinc-100 dark:bg-zinc-800/80">
+              <button
+                onClick={() => scrollToMessage(msg.reply_to!.id)}
+                className="px-2 py-1.5 rounded-lg border-l-2 border-zinc-400 dark:border-zinc-500 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700/80 transition-colors text-left w-full cursor-pointer"
+              >
                 <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mb-0.5">{msg.reply_to.author.full_name}</p>
                 <p className="text-[11px] text-zinc-600 dark:text-zinc-400 line-clamp-2">{msg.reply_to.text}</p>
-              </div>
+              </button>
             )}
 
             {/* Text + non-audio attachments bubble */}
@@ -199,13 +269,6 @@ function MessageBubble({
                 {otherAtts.length > 0 && (
                   <div className="mt-2 space-y-1">
                     {otherAtts.map((att) => {
-                      if (att.mime_type.startsWith("image/")) {
-                        return (
-                          <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer">
-                            <img src={att.url} alt={att.file_name} className="max-w-[200px] rounded-lg mt-1" />
-                          </a>
-                        );
-                      }
                       return (
                         <a
                           key={att.id}
@@ -229,14 +292,22 @@ function MessageBubble({
               </div>
             )}
 
-            {/* Audio/video — rendered bare, no bubble wrapper */}
-            {bareAtts.map((att) =>
-              isAudio(att.mime_type, att.file_name) ? (
-                <AudioPlayer key={att.id} src={att.url} fileName={att.file_name} isOwn={isOwn} />
-              ) : (
-                <video key={att.id} src={att.url} controls className="rounded-xl mt-1" style={{ maxWidth: 220, maxHeight: 160 }} />
-              )
-            )}
+            {/* Images, audio, video — rendered bare, no bubble wrapper */}
+            {bareAtts.map((att) => {
+              if (att.mime_type.startsWith("image/")) {
+                return (
+                  <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer">
+                    <img src={att.url} alt={att.file_name} className="max-w-[220px] rounded-xl" />
+                  </a>
+                );
+              }
+              if (isAudio(att.mime_type, att.file_name)) {
+                return <AudioPlayer key={att.id} src={att.url} isOwn={isOwn} />;
+              }
+              return att.file_name.startsWith("video-message")
+                ? <CircularVideoPlayer key={att.id} src={att.url} />
+                : <video key={att.id} src={att.url} controls className="rounded-xl" style={{ maxWidth: 220, maxHeight: 160 }} />;
+            })}
           </div>
 
           {/* Reply button */}
@@ -267,12 +338,21 @@ export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [micError, setMicError] = useState<string | null>(null);
+  const [isVideoRecording, setIsVideoRecording] = useState(false);
+  const [videoSeconds, setVideoSeconds] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const videoPreviewRef = useRef<HTMLVideoElement>(null);
+  const videoStreamRef = useRef<MediaStream | null>(null);
+  const videoMrRef = useRef<MediaRecorder | null>(null);
+  const videoChunksRef = useRef<Blob[]>([]);
+  const videoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { user } = useAuth();
   const { data: messages = [], isLoading } = useChatMessages(boardId);
@@ -282,9 +362,25 @@ export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
     if (isOpen) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isOpen]);
 
+  const handleMessagesScroll = () => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setShowScrollBtn(distanceFromBottom > 120);
+  };
+
+  const scrollToBottom = () => bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+
   useEffect(() => {
     if (isOpen) inputRef.current?.focus();
   }, [isOpen]);
+
+  useEffect(() => {
+    if (isVideoRecording && videoPreviewRef.current && videoStreamRef.current) {
+      videoPreviewRef.current.srcObject = videoStreamRef.current;
+      videoPreviewRef.current.play().catch(() => {});
+    }
+  }, [isVideoRecording]);
 
   const handleSend = () => {
     const trimmed = input.trim();
@@ -358,6 +454,55 @@ export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
     setRecordingSeconds(0);
   };
 
+  const startVideoRecording = async () => {
+    setMicError(null);
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      setMicError("Camera requires HTTPS or localhost.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 400 }, height: { ideal: 400 } },
+        audio: true,
+      });
+      videoStreamRef.current = stream;
+      const mr = new MediaRecorder(stream);
+      videoChunksRef.current = [];
+      mr.ondataavailable = (e) => { if (e.data.size > 0) videoChunksRef.current.push(e.data); };
+      mr.start();
+      videoMrRef.current = mr;
+      setIsVideoRecording(true);
+      setVideoSeconds(0);
+      videoTimerRef.current = setInterval(() => setVideoSeconds((s) => s + 1), 1000);
+    } catch (err: unknown) {
+      const name = err instanceof Error ? err.name : "";
+      setMicError(name === "NotAllowedError" ? "Camera access denied." : "Could not access camera.");
+    }
+  };
+
+  const stopVideoRecording = (send: boolean) => {
+    const mr = videoMrRef.current;
+    if (!mr) return;
+    mr.onstop = () => {
+      if (send && videoChunksRef.current.length > 0) {
+        const mimeType = mr.mimeType || "video/webm";
+        const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+        const blob = new Blob(videoChunksRef.current, { type: mimeType });
+        const file = new File([blob], `video-message.${ext}`, { type: mimeType });
+        sendMessage.mutate({ text: "", reply_to_id: replyTo?.id, files: [file] });
+        if (send) setReplyTo(null);
+      }
+      mr.stream.getTracks().forEach((t) => t.stop());
+      videoStreamRef.current = null;
+      if (videoPreviewRef.current) videoPreviewRef.current.srcObject = null;
+    };
+    mr.stop();
+    if (videoTimerRef.current) clearInterval(videoTimerRef.current);
+    videoMrRef.current = null;
+    setIsVideoRecording(false);
+    setVideoSeconds(0);
+  };
+
   const showMic = !input.trim() && pendingFiles.length === 0;
 
   return (
@@ -402,7 +547,8 @@ export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
+        <div className="relative flex-1 min-h-0 flex flex-col">
+          <div ref={messagesContainerRef} onScroll={handleMessagesScroll} className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3">
           {isLoading && (
             <p className="text-[12px] text-zinc-400 dark:text-zinc-600 text-center py-8">Loading messages…</p>
           )}
@@ -424,10 +570,21 @@ export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
                 isOwn={isOwn}
                 isSameAuthor={isSameAuthor}
                 onReply={handleReply}
+                boardId={boardId}
               />
             );
           })}
           <div ref={bottomRef} />
+          </div>
+          {showScrollBtn && (
+            <button
+              onClick={scrollToBottom}
+              className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-100 dark:text-zinc-900 text-[11px] shadow-lg hover:opacity-90 transition-opacity pointer-events-auto"
+            >
+              <ChevronsDown className="w-3.5 h-3.5" />
+              Latest
+            </button>
+          )}
         </div>
 
         {/* Reply banner */}
@@ -448,9 +605,37 @@ export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
           </div>
         )}
 
+        {/* Video recording circular preview */}
+        {isVideoRecording && (
+          <div className="flex flex-col items-center gap-3 py-5 border-t border-zinc-100 dark:border-zinc-800 shrink-0">
+            <div className="relative w-[160px] h-[160px]">
+              <div className="absolute inset-0 rounded-full border-4 border-red-500 animate-pulse" />
+              <div className="absolute inset-1.5 rounded-full overflow-hidden bg-zinc-900">
+                <video ref={videoPreviewRef} muted playsInline className="w-full h-full object-cover scale-x-[-1]" />
+              </div>
+              <div className="absolute bottom-3 right-3 bg-black/60 rounded-full px-1.5 py-0.5">
+                <span className="text-[9px] text-white tabular-nums">
+                  {Math.floor(videoSeconds / 60)}:{String(videoSeconds % 60).padStart(2, "0")}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-8">
+              <button onClick={() => stopVideoRecording(false)} className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-red-500 transition-colors">
+                <Trash2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => stopVideoRecording(true)}
+                className="w-10 h-10 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-100 dark:text-zinc-900 flex items-center justify-center hover:bg-zinc-700 dark:hover:bg-white transition-colors"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Input */}
         <div className="px-3 py-3 border-t border-zinc-100 dark:border-zinc-800 shrink-0">
-          {isRecording ? (
+          {isVideoRecording ? null : isRecording ? (
             <div className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2.5">
               {/* Cancel */}
               <button
@@ -518,13 +703,22 @@ export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
                 style={{ scrollbarWidth: "none" }}
               />
               {showMic ? (
-                <button
-                  onClick={startRecording}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors shrink-0 mb-0.5"
-                  title="Record voice message"
-                >
-                  <Mic className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-0.5 shrink-0 mb-0.5">
+                  <button
+                    onClick={startRecording}
+                    className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                    title="Voice message"
+                  >
+                    <Mic className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={startVideoRecording}
+                    className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                    title="Video message"
+                  >
+                    <Video className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               ) : (
                 <button
                   onClick={handleSend}
@@ -536,7 +730,7 @@ export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
               )}
             </div>
           )}
-          {!isRecording && (
+          {!isRecording && !isVideoRecording && (
             micError ? (
               <p className="text-[10px] text-red-500 mt-1.5 px-1">{micError}</p>
             ) : (

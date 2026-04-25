@@ -39,7 +39,16 @@ export const employeeApi = {
   },
 
   getActivities: async (): Promise<{ activities: { date: string; count: number }[]; total_contributions: number; total_active_days: number; max_streak: number; current_streak: number }> => {
-    const res = await axiosInstance.get<{ success: boolean; data: { activities: { date: string; count: number }[]; total_contributions: number; total_active_days: number } }>("/employees/me/activities");
+    const res = await axiosInstance.get("/employees/me/activities");
     return (res as any).data ?? res;
+  },
+
+  getProfile: async (id: number): Promise<{
+    profile: EmployeeResponse;
+    activities: { activities: { date: string; count: number }[]; total_contributions: number; total_active_days: number; max_streak: number; current_streak: number };
+  }> => {
+    const res = await axiosInstance.get(`/employees/${id}/profile`);
+    const data = (res as any).data ?? res;
+    return data;
   },
 };
