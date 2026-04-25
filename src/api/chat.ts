@@ -60,4 +60,16 @@ export const chatApi = {
     params.files?.forEach((f) => form.append("files", f));
     return axiosInstance.post(`/boards/${boardId}/chat`, form) as unknown as ChatMessage;
   },
+
+  deleteMessage: async (boardId: number, msgId: number): Promise<void> => {
+    await axiosInstance.delete(`/boards/${boardId}/chat/${msgId}`);
+  },
+
+  createPoll: async (boardId: number, question: string, options: string[]): Promise<void> => {
+    await axiosInstance.post(`/boards/${boardId}/chat/polls`, { question, options });
+  },
+
+  votePoll: async (boardId: number, optionId: number): Promise<void> => {
+    await axiosInstance.post(`/boards/${boardId}/chat/polls/vote`, { option_id: optionId });
+  },
 };

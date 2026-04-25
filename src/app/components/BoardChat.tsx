@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
-import { MessageCircle, X, Send, Users, Reply, Paperclip, FileText, Play, Pause, Music, Mic, Trash2, Video, ChevronsDown } from "lucide-react";
-import { useChatMessages, useSendMessage } from "../../hooks/useChat";
+import { MessageCircle, X, Send, Users, Reply, Paperclip, FileText, Play, Pause, Music, Mic, Trash2, Video, ChevronsDown, BarChart2, Plus, CheckCircle2 } from "lucide-react";
+import { useChatMessages, useSendMessage, useDeleteMessage, useCreatePoll, useVotePoll } from "../../hooks/useChat";
 import { useAuth } from "../context/AuthContext";
+import { useMe } from "../../hooks/useEmployee";
 import type { ChatMessage, ChatReplyTo } from "../../api/chat";
 
 function formatDuration(s: number) {
@@ -194,7 +195,9 @@ function CircularVideoPlayer({ src }: { src: string }) {
 }
 
 const audioExts = /\.(mp3|wav|ogg|oga|opus|m4a|aac|flac|weba|webm)$/i;
-const isAudio = (mime: string, name: string) => !mime.startsWith("video/") && (mime.startsWith("audio/") || audioExts.test(name));
+const isAudio = (mime: string, name: string) =>
+  name.startsWith("voice-message") ||
+  (!mime.startsWith("video/") && (mime.startsWith("audio/") || audioExts.test(name)));
 const isVideo = (mime: string) => mime.startsWith("video/");
 const isMediaBare = (mime: string, name: string) => isAudio(mime, name) || isVideo(mime) || mime.startsWith("image/");
 
@@ -206,25 +209,143 @@ function scrollToMessage(id: number) {
   setTimeout(() => el.classList.remove("chat-highlight"), 1200);
 }
 
+function PollDisplay({
+  poll,
+  isOwn,
+  currentEmployeeId,
+  onVote,
+  hasVoted,
+}: {
+  poll: NonNullable<import("../../api/chat").ChatMessage["poll"]>;
+  isOwn: boolean;
+  currentEmployeeId?: number;
+  onVote: (optionId: number) => void;
+  hasVoted: boolean;
+}) {
+  const [localVotedId, setLocalVotedId] = useState<number | null>(null);
+  const voted = hasVoted || localVotedId !== null;
+  const totalVotes = poll.options.reduce((s, o) => s + o.vote_count, 0) + (localVotedId !== null && !hasVoted ? 1 : 0);
+
+  return (
+    <div className={`px-3 py-2.5 rounded-2xl min-w-[200px] max-w-[260px] ${
+      isOwn ? "bg-zinc-900 dark:bg-zinc-100" : "bg-zinc-100 dark:bg-zinc-800"
+    }`}>
+      <div className="flex items-start gap-1.5 mb-3">
+        <BarChart2 className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${isOwn ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-400"}`} />
+        <p className={`text-[13px] font-medium leading-snug ${
+          isOwn ? "text-zinc-100 dark:text-zinc-900" : "text-zinc-900 dark:text-zinc-100"
+        }`}>
+          {poll.question}
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        {poll.options.map((option) => {
+          const serverVotedThis = (option.voters ?? []).some((v) => v.id === currentEmployeeId);
+          const localVotedThis = localVotedId === option.id;
+          const votedThis = serverVotedThis || localVotedThis;
+          const count = option.vote_count + (localVotedThis && !hasVoted ? 1 : 0);
+          const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+          return (
+            <button
+              key={option.id}
+              onClick={() => {
+                if (voted) return;
+                setLocalVotedId(option.id);
+                onVote(option.id);
+              }}
+              disabled={voted}
+              className={`w-full text-left rounded-lg overflow-hidden relative transition-opacity ${
+                voted ? "cursor-default" : "cursor-pointer hover:opacity-80 active:opacity-60"
+              }`}
+            >
+              {/* progress fill */}
+              {voted && (
+                <div
+                  className={`absolute inset-0 rounded-lg transition-all duration-700 ${
+                    votedThis
+                      ? isOwn ? "bg-zinc-600 dark:bg-zinc-300" : "bg-zinc-400 dark:bg-zinc-500"
+                      : isOwn ? "bg-zinc-800 dark:bg-zinc-200" : "bg-zinc-200 dark:bg-zinc-700"
+                  }`}
+                  style={{ width: `${Math.max(pct, 4)}%` }}
+                />
+              )}
+              {!voted && (
+                <div className={`absolute inset-0 rounded-lg ${
+                  isOwn ? "bg-zinc-800 dark:bg-zinc-200" : "bg-zinc-200 dark:bg-zinc-700"
+                }`} />
+              )}
+              <div className="relative flex items-center justify-between gap-2 px-2.5 py-1.5">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {voted && votedThis && (
+                    <CheckCircle2 className={`w-3 h-3 shrink-0 ${isOwn ? "text-zinc-300 dark:text-zinc-600" : "text-zinc-600 dark:text-zinc-300"}`} />
+                  )}
+                  <span className={`text-[12px] truncate ${
+                    isOwn ? "text-zinc-100 dark:text-zinc-900" : "text-zinc-900 dark:text-zinc-100"
+                  }`}>
+                    {option.text}
+                  </span>
+                </div>
+                {voted && (
+                  <span className={`text-[11px] shrink-0 tabular-nums ${
+                    isOwn ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-500 dark:text-zinc-400"
+                  }`}>
+                    {pct}%
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <p className={`text-[10px] mt-2 ${isOwn ? "text-zinc-600 dark:text-zinc-500" : "text-zinc-400 dark:text-zinc-500"}`}>
+        {totalVotes} {totalVotes === 1 ? "vote" : "votes"}{voted && " · voted"}
+      </p>
+    </div>
+  );
+}
+
 function MessageBubble({
   msg,
   isOwn,
   isSameAuthor,
   onReply,
+  onDelete,
   boardId,
+  currentEmployeeId,
 }: {
   msg: ChatMessage;
   isOwn: boolean;
   isSameAuthor: boolean;
   onReply: (msg: ChatMessage) => void;
+  onDelete: (msgId: number) => void;
   boardId: number;
+  currentEmployeeId?: number;
 }) {
+  const votePoll = useVotePoll(boardId);
   const bareAtts = msg.attachments.filter((a) => isMediaBare(a.mime_type, a.file_name));
   const otherAtts = msg.attachments.filter((a) => !isMediaBare(a.mime_type, a.file_name));
   const hasBubble = !!msg.text || otherAtts.length > 0 || !!msg.reply_to;
+  const hasVoted = !!msg.poll?.options.some((o) => (o.voters ?? []).some((v) => v.id === currentEmployeeId));
+  const [actionsVisible, setActionsVisible] = useState(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleTouchStart = () => {
+    longPressTimer.current = setTimeout(() => setActionsVisible(true), 450);
+  };
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  };
 
   return (
-    <div id={`chat-msg-${msg.id}`} className={`flex gap-2 group ${isOwn ? "flex-row-reverse" : ""} transition-colors duration-300`}>
+    <div
+      id={`chat-msg-${msg.id}`}
+      className={`flex gap-2 group ${isOwn ? "flex-row-reverse" : ""} transition-colors duration-300`}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchEnd}
+    >
       <div className="shrink-0 w-7 h-7 mt-0.5">
         {!isSameAuthor && (
           <Link to={`/profile/${msg.author.id}`} state={{ fromChat: true, boardId }} title={msg.author.full_name}>
@@ -244,7 +365,7 @@ function MessageBubble({
         )}
 
         <div className={`flex items-end gap-1 ${isOwn ? "flex-row-reverse" : ""}`}>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1" onClick={() => actionsVisible && setActionsVisible(false)}>
             {/* Reply preview — click to jump to original message */}
             {msg.reply_to && (
               <button
@@ -292,6 +413,17 @@ function MessageBubble({
               </div>
             )}
 
+            {/* Poll */}
+            {msg.poll && (
+              <PollDisplay
+                poll={msg.poll}
+                isOwn={isOwn}
+                currentEmployeeId={currentEmployeeId}
+                onVote={(optionId) => votePoll.mutate(optionId)}
+                hasVoted={hasVoted}
+              />
+            )}
+
             {/* Images, audio, video — rendered bare, no bubble wrapper */}
             {bareAtts.map((att) => {
               if (att.mime_type.startsWith("image/")) {
@@ -310,14 +442,25 @@ function MessageBubble({
             })}
           </div>
 
-          {/* Reply button */}
-          <button
-            onClick={() => onReply(msg)}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 shrink-0 mb-1"
-            title="Reply"
-          >
-            <Reply className="w-3.5 h-3.5" />
-          </button>
+          {/* Action buttons — hover on desktop, long-press on mobile */}
+          <div className={`flex flex-col items-center gap-0.5 transition-opacity shrink-0 mb-1 ${actionsVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+            <button
+              onClick={() => { onReply(msg); setActionsVisible(false); }}
+              className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+              title="Reply"
+            >
+              <Reply className="w-3.5 h-3.5" />
+            </button>
+            {isOwn && (
+              <button
+                onClick={() => { onDelete(msg.id); setActionsVisible(false); }}
+                className="p-1 text-zinc-400 hover:text-red-500 transition-colors"
+                title="Delete"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {isSameAuthor && (
@@ -354,9 +497,16 @@ export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
   const videoChunksRef = useRef<Blob[]>([]);
   const videoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [showPollComposer, setShowPollComposer] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState("");
+  const [pollOptions, setPollOptions] = useState(["", ""]);
+
   const { user } = useAuth();
+  const { data: currentEmployee } = useMe();
   const { data: messages = [], isLoading } = useChatMessages(boardId);
   const sendMessage = useSendMessage(boardId);
+  const deleteMessage = useDeleteMessage(boardId);
+  const createPoll = useCreatePoll(boardId);
 
   useEffect(() => {
     if (isOpen) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -405,6 +555,21 @@ export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
   const handleReply = (msg: ChatMessage) => {
     setReplyTo({ id: msg.id, text: msg.text, author: msg.author });
     inputRef.current?.focus();
+  };
+
+  const handleCreatePoll = () => {
+    const validOptions = pollOptions.map((o) => o.trim()).filter(Boolean);
+    if (!pollQuestion.trim() || validOptions.length < 2) return;
+    createPoll.mutate(
+      { question: pollQuestion.trim(), options: validOptions },
+      {
+        onSuccess: () => {
+          setShowPollComposer(false);
+          setPollQuestion("");
+          setPollOptions(["", ""]);
+        },
+      }
+    );
   };
 
   const startRecording = async () => {
@@ -560,7 +725,7 @@ export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
             </div>
           )}
           {[...messages].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).map((msg, idx, sorted) => {
-            const isOwn = msg.author.id === user?.id;
+            const isOwn = msg.author.id === currentEmployee?.id || msg.author.id === user?.id;
             const prevMsg = sorted[idx - 1];
             const isSameAuthor = !!prevMsg && prevMsg.author.id === msg.author.id;
             return (
@@ -570,7 +735,9 @@ export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
                 isOwn={isOwn}
                 isSameAuthor={isSameAuthor}
                 onReply={handleReply}
+                onDelete={(id) => deleteMessage.mutate(id)}
                 boardId={boardId}
+                currentEmployeeId={currentEmployee?.id}
               />
             );
           })}
@@ -586,6 +753,64 @@ export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
             </button>
           )}
         </div>
+
+        {/* Poll composer */}
+        {showPollComposer && (
+          <div className="px-3 py-3 border-t border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 shrink-0 space-y-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                <BarChart2 className="w-3 h-3" /> Create poll
+              </span>
+              <button onClick={() => setShowPollComposer(false)} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <input
+              type="text"
+              value={pollQuestion}
+              onChange={(e) => setPollQuestion(e.target.value)}
+              placeholder="Question…"
+              className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 text-[12px] text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-500"
+            />
+            <div className="space-y-1.5">
+              {pollOptions.map((opt, i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={opt}
+                    onChange={(e) => setPollOptions((prev) => prev.map((o, j) => j === i ? e.target.value : o))}
+                    placeholder={`Option ${i + 1}`}
+                    className="flex-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 text-[12px] text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-500"
+                  />
+                  {pollOptions.length > 2 && (
+                    <button
+                      onClick={() => setPollOptions((prev) => prev.filter((_, j) => j !== i))}
+                      className="text-zinc-400 hover:text-red-400 transition-colors shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between pt-0.5">
+              <button
+                onClick={() => setPollOptions((prev) => [...prev, ""])}
+                disabled={pollOptions.length >= 6}
+                className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 disabled:opacity-30 transition-colors"
+              >
+                <Plus className="w-3 h-3" /> Add option
+              </button>
+              <button
+                onClick={handleCreatePoll}
+                disabled={!pollQuestion.trim() || pollOptions.filter((o) => o.trim()).length < 2 || createPoll.isPending}
+                className="px-3 py-1.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-zinc-100 dark:text-zinc-900 text-[11px] font-medium hover:bg-zinc-700 dark:hover:bg-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {createPoll.isPending ? "Creating…" : "Create"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Reply banner */}
         {replyTo && <ReplyBanner replyTo={replyTo} onClear={() => setReplyTo(null)} />}
@@ -684,6 +909,13 @@ export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
                 title="Attach file"
               >
                 <Paperclip className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setShowPollComposer((v) => !v)}
+                className={`p-1 transition-colors shrink-0 mb-0.5 ${showPollComposer ? "text-zinc-700 dark:text-zinc-200" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"}`}
+                title="Create poll"
+              >
+                <BarChart2 className="w-3.5 h-3.5" />
               </button>
               <input
                 ref={fileInputRef}

@@ -18,3 +18,36 @@ export function useSendMessage(boardId: number) {
     },
   });
 }
+
+export function useCreatePoll(boardId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ question, options }: { question: string; options: string[] }) =>
+      chatApi.createPoll(boardId, question, options),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat", boardId] });
+    },
+  });
+}
+
+export function useVotePoll(boardId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (optionId: number) => chatApi.votePoll(boardId, optionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat", boardId] });
+    },
+  });
+}
+
+export function useDeleteMessage(boardId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (msgId: number) => chatApi.deleteMessage(boardId, msgId),
+    onSuccess: (_, msgId) => {
+      queryClient.setQueryData<import("../api/chat").ChatMessage[]>(["chat", boardId, 50, 0], (old) =>
+        old ? old.filter((m) => m.id !== msgId) : old
+      );
+    },
+  });
+}
