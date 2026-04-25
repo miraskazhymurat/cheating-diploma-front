@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
-import { MessageCircle, X, Send, Users, Reply, Paperclip, FileText, Play, Pause, Music, Mic, Trash2, Video, ChevronsDown, BarChart2, Plus, CheckCircle2 } from "lucide-react";
-import { useChatMessages, useSendMessage, useDeleteMessage, useCreatePoll, useVotePoll } from "../../hooks/useChat";
+import { MessageCircle, X, Send, Users, Reply, Paperclip, FileText, Play, Pause, Music, Mic, Trash2, Video, ChevronsDown, BarChart2, Plus, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
+import { useChatMessages, useSendMessage, useDeleteMessage, useCreatePoll, useVotePoll, useUnvotePoll } from "../../hooks/useChat";
 import { useAuth } from "../context/AuthContext";
 import { useMe } from "../../hooks/useEmployee";
 import type { ChatMessage, ChatReplyTo } from "../../api/chat";
@@ -214,94 +214,157 @@ function PollDisplay({
   isOwn,
   currentEmployeeId,
   onVote,
+  onUnvote,
   hasVoted,
 }: {
   poll: NonNullable<import("../../api/chat").ChatMessage["poll"]>;
   isOwn: boolean;
   currentEmployeeId?: number;
   onVote: (optionId: number) => void;
+  onUnvote: (optionId: number) => void;
   hasVoted: boolean;
 }) {
   const [localVotedId, setLocalVotedId] = useState<number | null>(null);
-  const voted = hasVoted || localVotedId !== null;
+  const [localUnvoted, setLocalUnvoted] = useState(false);
+  const [showVoters, setShowVoters] = useState(false);
+  const voted = (hasVoted || localVotedId !== null) && !localUnvoted;
   const totalVotes = poll.options.reduce((s, o) => s + o.vote_count, 0) + (localVotedId !== null && !hasVoted ? 1 : 0);
+
+  // Determine which option the user voted for (for unvote request)
+  const serverVotedOptionId = poll.options.find((o) =>
+    (o.voters ?? []).some((v) => v.id === currentEmployeeId)
+  )?.id ?? null;
+  const activeVotedOptionId = localVotedId ?? serverVotedOptionId;
+
+  const muted = "text-zinc-400 dark:text-zinc-500";
+  const body = isOwn ? "text-zinc-100 dark:text-zinc-900" : "text-zinc-900 dark:text-zinc-100";
+  const divider = isOwn ? "border-zinc-700 dark:border-zinc-300" : "border-zinc-200 dark:border-zinc-700";
+  const optionBg = isOwn ? "bg-zinc-800 dark:bg-zinc-200" : "bg-zinc-200 dark:bg-zinc-700";
+  const checkmarkCls = isOwn ? "text-zinc-300 dark:text-zinc-600" : "text-zinc-600 dark:text-zinc-300";
+
+  // Compute per-option vote data once, used by both unvoted and voted panels
+  const optionData = poll.options.map((option) => {
+    const serverVotedThis = (option.voters ?? []).some((v) => v.id === currentEmployeeId);
+    const localVotedThis = localVotedId === option.id;
+    const votedThis = (serverVotedThis || localVotedThis) && !localUnvoted;
+    const count = option.vote_count + (localVotedThis && !hasVoted ? 1 : 0);
+    const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+    return { option, votedThis, pct };
+  });
+
+  // Shared row layout so both panels are pixel-identical in height
+  const OptionRow = ({
+    option, votedThis, pct, showVoted, onClick, clickable,
+  }: {
+    option: typeof poll.options[0]; votedThis: boolean; pct: number;
+    showVoted: boolean; onClick: () => void; clickable: boolean;
+  }) => (
+    <button
+      key={option.id}
+      onClick={onClick}
+      className={`w-full text-left rounded-lg overflow-hidden relative ${
+        clickable ? "cursor-pointer hover:opacity-80 active:opacity-60" : "cursor-default"
+      }`}
+    >
+      {/* Background — always full width in unvoted, animated pct in voted */}
+      <div
+        className={`absolute inset-0 rounded-lg transition-[width] duration-700 ${
+          showVoted && votedThis
+            ? isOwn ? "bg-zinc-600 dark:bg-zinc-300" : "bg-zinc-400 dark:bg-zinc-500"
+            : optionBg
+        }`}
+        style={{ width: showVoted ? `${Math.max(pct, 4)}%` : "100%" }}
+      />
+      {/* Content — identical structure in both panels so heights match */}
+      <div className="relative flex items-center gap-1.5 px-2.5 py-1.5">
+        <CheckCircle2 className={`w-3 h-3 shrink-0 ${checkmarkCls} ${showVoted && votedThis ? "" : "invisible"}`} />
+        <span className={`text-[12px] truncate flex-1 ${body}`}>{option.text}</span>
+        <span className={`text-[11px] shrink-0 tabular-nums ${muted} ${showVoted ? "" : "invisible"}`}>{pct}%</span>
+      </div>
+    </button>
+  );
 
   return (
     <div className={`px-3 py-2.5 rounded-2xl min-w-[200px] max-w-[260px] ${
       isOwn ? "bg-zinc-900 dark:bg-zinc-100" : "bg-zinc-100 dark:bg-zinc-800"
     }`}>
+      {/* Header */}
       <div className="flex items-start gap-1.5 mb-3">
-        <BarChart2 className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${isOwn ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-400"}`} />
-        <p className={`text-[13px] font-medium leading-snug ${
-          isOwn ? "text-zinc-100 dark:text-zinc-900" : "text-zinc-900 dark:text-zinc-100"
-        }`}>
-          {poll.question}
-        </p>
+        <BarChart2 className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${muted}`} />
+        <p className={`text-[13px] font-medium leading-snug ${body}`}>{poll.question}</p>
       </div>
 
-      <div className="space-y-1.5">
-        {poll.options.map((option) => {
-          const serverVotedThis = (option.voters ?? []).some((v) => v.id === currentEmployeeId);
-          const localVotedThis = localVotedId === option.id;
-          const votedThis = serverVotedThis || localVotedThis;
-          const count = option.vote_count + (localVotedThis && !hasVoted ? 1 : 0);
-          const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
-          return (
-            <button
+      {/* 3 panels stacked in the same grid cell — height = max of all three, never changes */}
+      <div className="grid">
+        {/* Panel 1: unvoted */}
+        <div style={{ gridArea: "1/1" }} className={`space-y-1.5 ${voted || showVoters ? "invisible pointer-events-none" : ""}`}>
+          {optionData.map(({ option, votedThis, pct }) => (
+            <OptionRow
               key={option.id}
+              option={option} votedThis={votedThis} pct={pct}
+              showVoted={false} clickable={true}
+              onClick={() => { setLocalUnvoted(false); setLocalVotedId(option.id); onVote(option.id); }}
+            />
+          ))}
+          <p className={`text-[10px] mt-1 ${muted}`}>{totalVotes} {totalVotes === 1 ? "vote" : "votes"}</p>
+        </div>
+
+        {/* Panel 2: voted */}
+        <div style={{ gridArea: "1/1" }} className={`space-y-1.5 ${!voted || showVoters ? "invisible pointer-events-none" : ""}`}>
+          {optionData.map(({ option, votedThis, pct }) => (
+            <OptionRow
+              key={option.id}
+              option={option} votedThis={votedThis} pct={pct}
+              showVoted={true} clickable={votedThis}
               onClick={() => {
-                if (voted) return;
-                setLocalVotedId(option.id);
-                onVote(option.id);
+                if (votedThis && activeVotedOptionId !== null) {
+                  setLocalUnvoted(true);
+                  setLocalVotedId(null);
+                  onUnvote(activeVotedOptionId);
+                }
               }}
-              disabled={voted}
-              className={`w-full text-left rounded-lg overflow-hidden relative transition-opacity ${
-                voted ? "cursor-default" : "cursor-pointer hover:opacity-80 active:opacity-60"
-              }`}
-            >
-              {/* progress fill */}
-              {voted && (
-                <div
-                  className={`absolute inset-0 rounded-lg transition-all duration-700 ${
-                    votedThis
-                      ? isOwn ? "bg-zinc-600 dark:bg-zinc-300" : "bg-zinc-400 dark:bg-zinc-500"
-                      : isOwn ? "bg-zinc-800 dark:bg-zinc-200" : "bg-zinc-200 dark:bg-zinc-700"
-                  }`}
-                  style={{ width: `${Math.max(pct, 4)}%` }}
-                />
-              )}
-              {!voted && (
-                <div className={`absolute inset-0 rounded-lg ${
-                  isOwn ? "bg-zinc-800 dark:bg-zinc-200" : "bg-zinc-200 dark:bg-zinc-700"
-                }`} />
-              )}
-              <div className="relative flex items-center justify-between gap-2 px-2.5 py-1.5">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  {voted && votedThis && (
-                    <CheckCircle2 className={`w-3 h-3 shrink-0 ${isOwn ? "text-zinc-300 dark:text-zinc-600" : "text-zinc-600 dark:text-zinc-300"}`} />
-                  )}
-                  <span className={`text-[12px] truncate ${
-                    isOwn ? "text-zinc-100 dark:text-zinc-900" : "text-zinc-900 dark:text-zinc-100"
-                  }`}>
-                    {option.text}
-                  </span>
+            />
+          ))}
+          <p className={`text-[10px] mt-1 ${muted}`}>{totalVotes} {totalVotes === 1 ? "vote" : "votes"} · voted</p>
+        </div>
+
+        {/* Panel 3: voters list */}
+        <div style={{ gridArea: "1/1" }} className={`space-y-3 ${!showVoters ? "invisible pointer-events-none" : ""}`}>
+          {poll.options.map((option) => {
+            const voters = option.voters ?? [];
+            if (voters.length === 0) return null;
+            return (
+              <div key={option.id}>
+                <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 truncate ${muted}`}>{option.text}</p>
+                <div className="space-y-1.5">
+                  {voters.map((voter) => (
+                    <div key={voter.id} className="flex items-center gap-2">
+                      <Avatar name={voter.full_name} photo={voter.photo || undefined} size={5} />
+                      <span className={`text-[12px] truncate ${body}`}>
+                        {voter.id === currentEmployeeId ? "You" : voter.full_name}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-                {voted && (
-                  <span className={`text-[11px] shrink-0 tabular-nums ${
-                    isOwn ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-500 dark:text-zinc-400"
-                  }`}>
-                    {pct}%
-                  </span>
-                )}
               </div>
-            </button>
-          );
-        })}
+            );
+          })}
+          {poll.options.every((o) => (o.voters ?? []).length === 0) && (
+            <p className={`text-[11px] ${muted}`}>No votes yet.</p>
+          )}
+          <p className={`text-[10px] ${muted}`}>{totalVotes} {totalVotes === 1 ? "vote" : "votes"} total</p>
+        </div>
       </div>
 
-      <p className={`text-[10px] mt-2 ${isOwn ? "text-zinc-600 dark:text-zinc-500" : "text-zinc-400 dark:text-zinc-500"}`}>
-        {totalVotes} {totalVotes === 1 ? "vote" : "votes"}{voted && " · voted"}
-      </p>
+      {/* Toggle button */}
+      {totalVotes > 0 && (
+        <button
+          onClick={() => setShowVoters((v) => !v)}
+          className={`mt-2 pt-2 w-full text-left border-t text-[11px] cursor-pointer transition-opacity hover:opacity-70 ${divider} ${muted}`}
+        >
+          {showVoters ? "Back to poll" : "Show results"}
+        </button>
+      )}
     </div>
   );
 }
@@ -324,6 +387,7 @@ function MessageBubble({
   currentEmployeeId?: number;
 }) {
   const votePoll = useVotePoll(boardId);
+  const unvotePoll = useUnvotePoll(boardId);
   const bareAtts = msg.attachments.filter((a) => isMediaBare(a.mime_type, a.file_name));
   const otherAtts = msg.attachments.filter((a) => !isMediaBare(a.mime_type, a.file_name));
   const hasBubble = !!msg.text || otherAtts.length > 0 || !!msg.reply_to;
@@ -420,6 +484,7 @@ function MessageBubble({
                 isOwn={isOwn}
                 currentEmployeeId={currentEmployeeId}
                 onVote={(optionId) => votePoll.mutate(optionId)}
+                onUnvote={(optionId) => unvotePoll.mutate(optionId)}
                 hasVoted={hasVoted}
               />
             )}
@@ -503,20 +568,62 @@ export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
 
   const { user } = useAuth();
   const { data: currentEmployee } = useMe();
-  const { data: messages = [], isLoading } = useChatMessages(boardId);
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useChatMessages(boardId);
   const sendMessage = useSendMessage(boardId);
   const deleteMessage = useDeleteMessage(boardId);
   const createPoll = useCreatePoll(boardId);
 
+  const messages = data?.pages.flatMap((page) => page) ?? [];
+  const prevScrollHeightRef = useRef<number>(0);
+
+  // Scroll to bottom when chat opens
+  const prevIsOpenRef = useRef(false);
   useEffect(() => {
-    if (isOpen) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isOpen]);
+    if (isOpen && !prevIsOpenRef.current) {
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "instant" }), 0);
+    }
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  // Scroll to bottom when a new message arrives
+  const newestMsgId = messages.length > 0
+    ? Math.max(...messages.map((m) => m.id))
+    : null;
+  const prevNewestMsgIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    if (newestMsgId !== null && newestMsgId !== prevNewestMsgIdRef.current) {
+      prevNewestMsgIdRef.current = newestMsgId;
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [newestMsgId, isOpen]);
+
+  // Preserve scroll position when older messages are prepended
+  useEffect(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    if (isFetchingNextPage) {
+      prevScrollHeightRef.current = el.scrollHeight;
+    } else if (prevScrollHeightRef.current > 0) {
+      el.scrollTop += el.scrollHeight - prevScrollHeightRef.current;
+      prevScrollHeightRef.current = 0;
+    }
+  }, [isFetchingNextPage]);
 
   const handleMessagesScroll = () => {
     const el = messagesContainerRef.current;
     if (!el) return;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     setShowScrollBtn(distanceFromBottom > 120);
+    if (el.scrollTop < 80 && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
   };
 
   const scrollToBottom = () => bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -716,6 +823,9 @@ export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
           <div ref={messagesContainerRef} onScroll={handleMessagesScroll} className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3">
           {isLoading && (
             <p className="text-[12px] text-zinc-400 dark:text-zinc-600 text-center py-8">Loading messages…</p>
+          )}
+          {isFetchingNextPage && (
+            <p className="text-[11px] text-zinc-400 dark:text-zinc-600 text-center py-2">Loading older messages…</p>
           )}
           {!isLoading && messages.length === 0 && (
             <div className="text-center py-8">

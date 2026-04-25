@@ -72,4 +72,8 @@ export const chatApi = {
   votePoll: async (boardId: number, optionId: number): Promise<void> => {
     await axiosInstance.post(`/boards/${boardId}/chat/polls/vote`, { option_id: optionId });
   },
+
+  unvotePoll: async (boardId: number, optionId: number): Promise<void> => {
+    await axiosInstance.post(`/boards/${boardId}/chat/polls/unvote`, { option_id: optionId });
+  },
 };

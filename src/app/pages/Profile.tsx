@@ -382,7 +382,7 @@ export function Profile() {
                   <User className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                   <h2 className="text-[13px] text-zinc-700 dark:text-zinc-300">Profile Information</h2>
                 </div>
-                {!isEditing && (
+                {!isEditing && !fromChat?.fromChat && (
                   <button onClick={startEditing} className="text-[12px] px-3 py-1 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
                     Edit
                   </button>

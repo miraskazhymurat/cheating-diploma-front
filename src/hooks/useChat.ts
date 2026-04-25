@@ -1,10 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { chatApi, type SendMessageParams } from "../api/chat";
+import { useMutation, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import type { InfiniteData } from "@tanstack/react-query";
+import { chatApi, type SendMessageParams, type ChatMessage } from "../api/chat";
 
-export function useChatMessages(boardId: number, limit = 50, offset = 0) {
-  return useQuery({
-    queryKey: ["chat", boardId, limit, offset],
-    queryFn: () => chatApi.getMessages(boardId, limit, offset),
+export function useChatMessages(boardId: number) {
+  return useInfiniteQuery({
+    queryKey: ["chat", boardId],
+    queryFn: ({ pageParam }) => chatApi.getMessages(boardId, 50, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPage.length === 50 ? lastPageParam + 50 : undefined,
     enabled: boardId > 0,
   });
 }
@@ -40,14 +44,28 @@ export function useVotePoll(boardId: number) {
   });
 }
 
+export function useUnvotePoll(boardId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (optionId: number) => chatApi.unvotePoll(boardId, optionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat", boardId] });
+    },
+  });
+}
+
 export function useDeleteMessage(boardId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (msgId: number) => chatApi.deleteMessage(boardId, msgId),
     onSuccess: (_, msgId) => {
-      queryClient.setQueryData<import("../api/chat").ChatMessage[]>(["chat", boardId, 50, 0], (old) =>
-        old ? old.filter((m) => m.id !== msgId) : old
-      );
+      queryClient.setQueryData<InfiniteData<ChatMessage[]>>(["chat", boardId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => page.filter((m) => m.id !== msgId)),
+        };
+      });
     },
   });
 }
