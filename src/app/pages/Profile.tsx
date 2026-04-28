@@ -13,14 +13,37 @@ const getActivityColor = (level: number) => {
   return "bg-emerald-400 border-emerald-500 dark:bg-emerald-600/60 dark:border-emerald-600/70";
 };
 
-const achievements = [
-  { id: 1, emoji: "🌱", label: "First Steps", desc: "Made your first contribution", unlocked: true, color: "emerald" },
-  { id: 2, emoji: "🔥", label: "On Fire", desc: "Reached a 7-day streak", unlocked: true, color: "orange" },
-  { id: 3, emoji: "🎯", label: "Sharp Shooter", desc: "Completed 10 tasks", unlocked: true, color: "blue" },
-  { id: 4, emoji: "⚡", label: "Speed Demon", desc: "Finished 5 tasks in one day", unlocked: false, color: "yellow" },
-  { id: 5, emoji: "🤝", label: "Team Player", desc: "Assigned to 20 tasks", unlocked: false, color: "violet" },
-  { id: 6, emoji: "💎", label: "Diamond", desc: "Reached 100 contributions", unlocked: false, color: "cyan" },
+type AchievementLevel = { threshold: number; unlocked: boolean };
+type AchievementCategory = {
+  id: string;
+  emoji: string;
+  label: string;
+  levels: [AchievementLevel, AchievementLevel, AchievementLevel];
+};
+
+const buildAchievements = (): AchievementCategory[] => [
+  { id: "closer",       emoji: "🎯", label: "Closer",       levels: [{ threshold: 10, unlocked: false }, { threshold: 50, unlocked: false }, { threshold: 200, unlocked: false }] },
+  { id: "finisher",     emoji: "✅", label: "Finisher",     levels: [{ threshold: 5,  unlocked: false }, { threshold: 20, unlocked: false }, { threshold: 50,  unlocked: false }] },
+  { id: "challenger",   emoji: "⚔️", label: "Challenger",   levels: [{ threshold: 10, unlocked: false }, { threshold: 50, unlocked: false }, { threshold: 200, unlocked: false }] },
+  { id: "elite",        emoji: "💎", label: "Elite",        levels: [{ threshold: 5,  unlocked: false }, { threshold: 25, unlocked: false }, { threshold: 100, unlocked: false }] },
+  { id: "perfectionist",emoji: "🏆", label: "Perfectionist",levels: [{ threshold: 5,  unlocked: false }, { threshold: 20, unlocked: false }, { threshold: 50,  unlocked: false }] },
+  { id: "cleanworker",  emoji: "📋", label: "Clean Worker", levels: [{ threshold: 10, unlocked: false }, { threshold: 50, unlocked: false }, { threshold: 150, unlocked: false }] },
+  { id: "consistency",  emoji: "📅", label: "Consistency",  levels: [{ threshold: 3,  unlocked: false }, { threshold: 7,  unlocked: false }, { threshold: 11,  unlocked: false }] },
+  { id: "unstoppable",  emoji: "🚀", label: "Unstoppable",  levels: [{ threshold: 50, unlocked: false }, { threshold: 100,unlocked: false }, { threshold: 200, unlocked: false }] },
+  { id: "onfire",       emoji: "🔥", label: "On Fire",      levels: [{ threshold: 3,  unlocked: false }, { threshold: 7,  unlocked: false }, { threshold: 30,  unlocked: false }] },
+  { id: "teamplayer",   emoji: "🤝", label: "Team Player",  levels: [{ threshold: 5,  unlocked: false }, { threshold: 15, unlocked: false }, { threshold: 50,  unlocked: false }] },
+  { id: "reviewer",     emoji: "🔍", label: "Reviewer",     levels: [{ threshold: 10, unlocked: false }, { threshold: 50, unlocked: false }, { threshold: 150, unlocked: false }] },
+  { id: "communicator", emoji: "💬", label: "Communicator", levels: [{ threshold: 50, unlocked: false }, { threshold: 200,unlocked: false }, { threshold: 1000,unlocked: false }] },
+  { id: "pollmaster",   emoji: "📊", label: "Poll Master",  levels: [{ threshold: 10, unlocked: false }, { threshold: 100,unlocked: false }, { threshold: 1000,unlocked: false }] },
+  { id: "influencer",   emoji: "📣", label: "Influencer",   levels: [{ threshold: 50, unlocked: false }, { threshold: 300,unlocked: false }, { threshold: 1000,unlocked: false }] },
+  { id: "voicepioneer", emoji: "🎙️", label: "Voice Pioneer",levels: [{ threshold: 20, unlocked: false }, { threshold: 100,unlocked: false }, { threshold: 1000,unlocked: false }] },
+  { id: "broadcaster",  emoji: "🎬", label: "Broadcaster",  levels: [{ threshold: 20, unlocked: false }, { threshold: 100,unlocked: false }, { threshold: 1000,unlocked: false }] },
+  { id: "legend",       emoji: "👑", label: "Legend",       levels: [{ threshold: 10, unlocked: false }, { threshold: 10, unlocked: false }, { threshold: 10,  unlocked: false }] },
+  { id: "master",       emoji: "🌟", label: "Master",       levels: [{ threshold: 25, unlocked: false }, { threshold: 25, unlocked: false }, { threshold: 25,  unlocked: false }] },
+  { id: "grandmaster",  emoji: "⭐", label: "Grandmaster",  levels: [{ threshold: 50, unlocked: false }, { threshold: 50, unlocked: false }, { threshold: 50,  unlocked: false }] },
 ];
+
+const achievementCategories = buildAchievements();
 
 const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -502,33 +525,38 @@ export function Profile() {
                 <Trophy className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                 <h3 className="text-[12px] text-zinc-600 dark:text-zinc-400">Achievements</h3>
                 <span className="ml-auto text-[11px] text-zinc-400 dark:text-zinc-600">
-                  {achievements.filter((a) => a.unlocked).length}/{achievements.length}
+                  {achievementCategories.reduce((n, c) => n + c.levels.filter((l) => l.unlocked).length, 0)}/{achievementCategories.length * 3}
                 </span>
               </div>
-              <div className="space-y-2">
-                {achievements.map((a) => (
-                  <div
-                    key={a.id}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${
-                      a.unlocked
-                        ? "bg-zinc-50 dark:bg-zinc-800/60"
-                        : "opacity-40"
-                    }`}
-                  >
-                    <span className={`text-[18px] leading-none ${a.unlocked ? "" : "grayscale"}`}>
-                      {a.emoji}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[12px] text-zinc-800 dark:text-zinc-200 leading-tight">{a.label}</p>
-                      <p className="text-[10px] text-zinc-500 dark:text-zinc-500 mt-0.5 leading-tight truncate">{a.desc}</p>
+              <div className="space-y-1 max-h-[420px] overflow-y-auto pr-1" style={{ scrollbarWidth: "thin", scrollbarColor: "rgb(161 161 170) transparent" }}>
+                {achievementCategories.map((cat) => {
+                  const highestUnlocked = cat.levels.reduce((hi, l, i) => (l.unlocked ? i : hi), -1);
+                  const anyUnlocked = highestUnlocked >= 0;
+                  return (
+                    <div
+                      key={cat.id}
+                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md ${anyUnlocked ? "bg-zinc-50 dark:bg-zinc-800/60" : "opacity-45"}`}
+                    >
+                      <span className={`text-[15px] leading-none shrink-0 ${anyUnlocked ? "" : "grayscale"}`}>{cat.emoji}</span>
+                      <span className="text-[11px] text-zinc-700 dark:text-zinc-300 flex-1 truncate">{cat.label}</span>
+                      <div className="flex gap-1 shrink-0">
+                        {(["I", "II", "III"] as const).map((roman, i) => (
+                          <span
+                            key={roman}
+                            title={`${cat.label} ${roman} — ${cat.levels[i].threshold}`}
+                            className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none ${
+                              cat.levels[i].unlocked
+                                ? "bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400"
+                                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-600"
+                            }`}
+                          >
+                            {roman}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    {a.unlocked && (
-                      <span className="ml-auto shrink-0 text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-medium">
-                        done
-                      </span>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
