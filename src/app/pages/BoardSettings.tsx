@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from "react-router";
 import { toast } from "sonner";
-import { Settings, ArrowLeft, UserPlus, X, Search, Plus, Trash2, ChevronUp, ChevronDown, Star } from "lucide-react";
+import { Settings, ArrowLeft, UserPlus, X, Search, Plus, Trash2, ChevronUp, ChevronDown, CircleDot } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 function StatusColorPicker({ initialColor, onSave }: { initialColor: string; onSave: (color: string) => void }) {
@@ -186,8 +186,8 @@ export function BoardSettings() {
                       title={status.is_default ? "Default status" : "Set as default"}
                       className="p-1 transition-colors disabled:cursor-default"
                     >
-                      <Star
-                        className={`w-3.5 h-3.5 ${status.is_default ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground hover:text-yellow-400"}`}
+                      <CircleDot
+                        className={`w-3.5 h-3.5 ${status.is_default ? "text-blue-500" : "text-muted-foreground hover:text-blue-500"}`}
                       />
                     </button>
                     <button
