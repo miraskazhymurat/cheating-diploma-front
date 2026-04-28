@@ -45,6 +45,32 @@ export interface Insight {
   type: "warning" | "suggestion";
 }
 
+export type RiskLevel = "low" | "medium" | "high" | "critical";
+
+export interface BurnoutAlert {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  riskLevel: RiskLevel;
+  signals: string[];
+  interventions: string[];
+}
+
+export interface PromotionScores {
+  performance: number;
+  delivery: number;
+  collaboration: number;
+  impact: number;
+}
+
+export interface PromotionCandidate {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  scores: PromotionScores;
+  total: number;
+}
+
 export const boards: Board[] = [
   {
     id: "1",
@@ -225,6 +251,57 @@ export const employees: Employee[] = [
 export const insights: Insight[] = [
   { id: "1", text: "Alex is overloaded", type: "warning" },
   { id: "2", text: "Sam can take more tasks", type: "suggestion" },
+];
+
+export const burnoutAlerts: BurnoutAlert[] = [
+  {
+    id: "1",
+    employeeId: "1",
+    employeeName: "Alex",
+    riskLevel: "high",
+    signals: ["13 tasks active", "2 hard sprints", "overtime 3× this week"],
+    interventions: ["Reassign 2 in-progress tasks", "Schedule 1:1 check-in this week"],
+  },
+  {
+    id: "2",
+    employeeId: "3",
+    employeeName: "Jordan",
+    riskLevel: "medium",
+    signals: ["CI/CD pipeline overdue", "Back-to-back hard tasks"],
+    interventions: ["Pair with senior on pipeline", "Block focus time Friday"],
+  },
+  {
+    id: "3",
+    employeeId: "2",
+    employeeName: "Sam",
+    riskLevel: "low",
+    signals: ["Slightly above avg load"],
+    interventions: ["Monitor next sprint"],
+  },
+];
+
+export const promotionCandidates: PromotionCandidate[] = [
+  {
+    id: "1",
+    employeeId: "2",
+    employeeName: "Sam",
+    scores: { performance: 88, delivery: 95, collaboration: 82, impact: 90 },
+    total: 89,
+  },
+  {
+    id: "2",
+    employeeId: "1",
+    employeeName: "Alex",
+    scores: { performance: 84, delivery: 76, collaboration: 86, impact: 88 },
+    total: 84,
+  },
+  {
+    id: "3",
+    employeeId: "3",
+    employeeName: "Jordan",
+    scores: { performance: 76, delivery: 81, collaboration: 78, impact: 73 },
+    total: 77,
+  },
 ];
 
 // Helper to get current user (simulated)
