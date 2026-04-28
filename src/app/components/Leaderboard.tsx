@@ -1,5 +1,6 @@
 import { Flame, Star } from "lucide-react";
 import { useState, useMemo } from "react";
+import { Link } from "react-router";
 import type { EmployeeResponse } from "../../api/types";
 
 // ── Level config ──────────────────────────────────────────────────────────────
@@ -199,8 +200,9 @@ export function Leaderboard({ employees, currentUserId }: LeaderboardProps) {
             const isMe = entry.emp.user_id === currentUserId;
             const lvl = getLevel(entry.totalPts);
             return (
-              <div
+              <Link
                 key={entry.emp.user_id}
+                to={`/profile/${entry.emp.user_id}`}
                 className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
                   isMe
                     ? "bg-violet-50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900/40"
@@ -236,7 +238,7 @@ export function Leaderboard({ employees, currentUserId }: LeaderboardProps) {
                 <span className="text-[12px] font-semibold text-zinc-700 dark:text-zinc-300 tabular-nums shrink-0">
                   {entry.pts30d.toLocaleString()}
                 </span>
-              </div>
+              </Link>
             );
           })}
         </div>

@@ -1,4 +1,5 @@
 import { Flame, TrendingUp, ChevronRight } from "lucide-react";
+import { Link } from "react-router";
 import { BurnoutAlert, PromotionCandidate, RiskLevel } from "../data/mockData";
 
 interface AIInsightsProps {
@@ -61,9 +62,9 @@ export function AIInsights({ burnoutAlerts, promotionCandidates }: AIInsightsPro
                 <div className="px-3 py-2.5">
                   {/* Name + badge */}
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[12px] font-medium text-zinc-900 dark:text-zinc-100">
+                    <Link to={`/profile/${alert.employeeId}`} className="text-[12px] font-medium text-zinc-900 dark:text-zinc-100 hover:underline">
                       {alert.employeeName}
-                    </span>
+                    </Link>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${cfg.badge}`}>
                       {cfg.label}
                     </span>
@@ -115,9 +116,9 @@ export function AIInsights({ burnoutAlerts, promotionCandidates }: AIInsightsPro
             >
               {/* Name + total */}
               <div className="flex items-center justify-between mb-2.5">
-                <span className="text-[12px] font-medium text-zinc-900 dark:text-zinc-100">
+                <Link to={`/profile/${c.employeeId}`} className="text-[12px] font-medium text-zinc-900 dark:text-zinc-100 hover:underline">
                   {c.employeeName}
-                </span>
+                </Link>
                 <span className="text-[12px] font-semibold text-violet-600 dark:text-violet-400">
                   {c.total}
                 </span>

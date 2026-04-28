@@ -373,7 +373,7 @@ export function Profile() {
 
         {/* Profile + Sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
+          <div className="order-2 lg:order-1 lg:col-span-2 space-y-8">
 
             {/* Profile Information */}
             <div className="p-6 rounded-lg bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800">
@@ -469,7 +469,7 @@ export function Profile() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="order-1 lg:order-2 space-y-6">
             <div className="p-6 rounded-lg bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800">
               <h3 className="text-[12px] text-zinc-600 dark:text-zinc-400 mb-4">Account</h3>
               <div className="space-y-3 text-[12px]">
