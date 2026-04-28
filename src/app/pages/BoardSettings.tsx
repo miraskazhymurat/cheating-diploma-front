@@ -117,7 +117,7 @@ export function BoardSettings() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-12">
+    <div className="min-h-full bg-background max-w-3xl mx-auto px-6 py-12">
       {/* Back Button */}
       <Link
         to={`/board/${boardId}`}
@@ -393,13 +393,13 @@ export function BoardSettings() {
 
           {/* Danger Zone — owner only */}
           {isOwner && (
-            <div className="p-6 rounded-lg border border-red-900/50 bg-red-950/10">
-              <h2 className="text-[13px] text-red-400 mb-1">Danger Zone</h2>
+            <div className="p-6 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/10">
+              <h2 className="text-[13px] text-red-600 dark:text-red-400 mb-1">Danger Zone</h2>
               <p className="text-[12px] text-muted-foreground mb-4">Deleting the board is permanent and cannot be undone.</p>
               {!confirmDelete ? (
                 <button
                   onClick={() => setConfirmDelete(true)}
-                  className="text-[12px] px-4 py-2 border border-red-800 text-red-400 rounded-md hover:bg-red-950/40 transition-colors"
+                  className="text-[12px] px-4 py-2 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 rounded-md hover:bg-red-100 dark:hover:bg-red-950/40 transition-colors"
                 >
                   Delete board
                 </button>

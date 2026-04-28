@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Activity, Camera, Lock, Trophy, User } from "lucide-react";
-import { useMe, useUpdateEmployee, useEmployeeActivities } from "../../hooks/useEmployee";
+import { useParams, useLocation, useNavigate } from "react-router";
+import { ArrowLeft, MessageCircle } from "lucide-react";
+import { useMe, useUpdateEmployee, useEmployeeActivities, useEmployeeProfile } from "../../hooks/useEmployee";
+import { useAuth } from "../context/AuthContext";
 
 const getActivityColor = (level: number) => {
   if (level === 0) return "bg-zinc-100 border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800";
@@ -36,9 +39,23 @@ const toLocalKey = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export function Profile() {
-  const { data: employee, isLoading, isError } = useMe();
+  const { userId: userIdParam } = useParams<{ userId: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const fromChat = (location.state as { fromChat?: boolean; boardId?: number } | null);
+  const viewingId = userIdParam ? Number(userIdParam) : null;
+  const { user: currentUser } = useAuth();
+  const isOwnProfile = viewingId == null || viewingId === currentUser?.id;
+
+  const meQuery = useMe();
+  const otherQuery = useEmployeeProfile(viewingId ?? 0);
   const updateEmployee = useUpdateEmployee();
-  const { data: activityData } = useEmployeeActivities();
+  const meActivityQuery = useEmployeeActivities();
+
+  const employee = isOwnProfile ? meQuery.data : otherQuery.data?.profile;
+  const isLoading = isOwnProfile ? meQuery.isLoading : otherQuery.isLoading;
+  const isError = isOwnProfile ? meQuery.isError : otherQuery.isError;
+  const activityData = isOwnProfile ? meActivityQuery.data : otherQuery.data?.activities;
 
   const photoInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -193,28 +210,56 @@ export function Profile() {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
       <div className="max-w-5xl mx-auto px-6 py-12">
 
+        {fromChat?.fromChat && (
+          <div className="flex items-center justify-between mb-6 px-4 py-2.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+            <div className="flex items-center gap-2 text-[12px] text-zinc-500 dark:text-zinc-400">
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span>Viewing from board chat</span>
+            </div>
+            <button
+              onClick={() => navigate(`/board/${fromChat.boardId}`)}
+              className="flex items-center gap-1.5 text-[12px] text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Back to chat
+            </button>
+          </div>
+        )}
+
         {/* Avatar + name */}
         <div className="flex items-center gap-4 mb-8">
-          <button
-            onClick={() => photoInputRef.current?.click()}
-            disabled={isUploadingPhoto}
-            className="relative w-16 h-16 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center overflow-hidden group cursor-pointer shrink-0"
-            title="Change photo"
-          >
-            {employee.photo ? (
-              <img src={employee.photo} alt={employee.full_name} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-[20px] text-zinc-700 dark:text-zinc-100">{employee.full_name.charAt(0)}</span>
-            )}
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              {isUploadingPhoto ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          {isOwnProfile ? (
+            <>
+              <button
+                onClick={() => photoInputRef.current?.click()}
+                disabled={isUploadingPhoto}
+                className="relative w-16 h-16 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center overflow-hidden group cursor-pointer shrink-0"
+                title="Change photo"
+              >
+                {employee.photo ? (
+                  <img src={employee.photo} alt={employee.full_name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-[20px] text-zinc-700 dark:text-zinc-100">{employee.full_name.charAt(0)}</span>
+                )}
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {isUploadingPhoto ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Camera className="w-4 h-4 text-white" />
+                  )}
+                </div>
+              </button>
+              <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+            </>
+          ) : (
+            <div className="relative w-16 h-16 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
+              {employee.photo ? (
+                <img src={employee.photo} alt={employee.full_name} className="w-full h-full object-cover" />
               ) : (
-                <Camera className="w-4 h-4 text-white" />
+                <span className="text-[20px] text-zinc-700 dark:text-zinc-100">{employee.full_name.charAt(0)}</span>
               )}
             </div>
-          </button>
-          <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+          )}
           <div>
             <h1 className="text-[15px] text-zinc-900 dark:text-zinc-100 mb-1">{employee.full_name}</h1>
             <p className="text-[12px] text-zinc-500">{employee.email}</p>
@@ -337,7 +382,7 @@ export function Profile() {
                   <User className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                   <h2 className="text-[13px] text-zinc-700 dark:text-zinc-300">Profile Information</h2>
                 </div>
-                {!isEditing && (
+                {!isEditing && !fromChat?.fromChat && (
                   <button onClick={startEditing} className="text-[12px] px-3 py-1 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
                     Edit
                   </button>
@@ -397,8 +442,8 @@ export function Profile() {
               </div>
             </div>
 
-            {/* Change Password */}
-            <div className="p-6 rounded-lg bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800">
+            {/* Change Password — own profile only */}
+            {isOwnProfile && <div className="p-6 rounded-lg bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800">
               <div className="flex items-center gap-2 mb-6">
                 <Lock className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                 <h2 className="text-[13px] text-zinc-700 dark:text-zinc-300">Change Password</h2>
@@ -420,7 +465,7 @@ export function Profile() {
                   Update password
                 </button>
               </div>
-            </div>
+            </div>}
           </div>
 
           {/* Sidebar */}

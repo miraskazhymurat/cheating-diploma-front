@@ -26,10 +26,10 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-const difficultyConfig: Record<string, { label: string; className: string; dot: string }> = {
-  easy: { label: "Easy", className: "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/50", dot: "bg-emerald-500 dark:bg-emerald-400" },
+const priorityConfig: Record<string, { label: string; className: string; dot: string }> = {
+  low: { label: "Low", className: "bg-sky-50 text-sky-600 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900/50", dot: "bg-sky-500 dark:bg-sky-400" },
   medium: { label: "Medium", className: "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50", dot: "bg-amber-500 dark:bg-amber-400" },
-  hard: { label: "Hard", className: "bg-red-50 text-red-600 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50", dot: "bg-red-500 dark:bg-red-400" },
+  high: { label: "High", className: "bg-red-50 text-red-600 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50", dot: "bg-red-500 dark:bg-red-400" },
 };
 
 function Avatar({ photo, name, size = 6 }: { photo?: string; name?: string; size?: number }) {
@@ -312,7 +312,7 @@ export function TaskModal({ task, isOpen, onClose, boardId, statuses = [] }: Tas
 
   const currentStatus = statuses.find((s) => s.status_id === statusId);
   const currentStatusLabel = currentStatus?.name ?? task.status;
-  const diffCfg = task.difficulty ? difficultyConfig[task.difficulty] : null;
+  const diffCfg = task.priority ? priorityConfig[task.priority] : null;
 
   return (
     <>

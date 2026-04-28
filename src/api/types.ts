@@ -123,7 +123,7 @@ export interface UpdateTaskRequest {
 // ─── UI display types ───────────────────────────────────────────────────────
 
 export type TaskStatus = "todo" | "in-progress" | "done";
-export type TaskDifficulty = "easy" | "medium" | "hard";
+export type TaskPriority = "low" | "medium" | "high";
 
 export interface UITask {
   id: string;
@@ -132,7 +132,7 @@ export interface UITask {
   description?: string;
   status: TaskStatus;
   statusId: number;
-  difficulty?: TaskDifficulty;
+  priority?: TaskPriority;
   assignedTo: string;
   assigneeId?: number;
   assigneePhoto?: string;
@@ -161,10 +161,10 @@ const STATUS_TO_ID: Record<TaskStatus, number> = {
   done: 3,
 };
 
-const PRIORITY_MAP: Record<number, TaskDifficulty> = {
-  1: "easy",
+const PRIORITY_MAP: Record<number, TaskPriority> = {
+  1: "low",
   2: "medium",
-  3: "hard",
+  3: "high",
 };
 
 export function taskResponseToUI(
@@ -181,7 +181,7 @@ export function taskResponseToUI(
     description: task.description || undefined,
     status: STATUS_MAP[task.status_id] ?? "todo",
     statusId: task.status_id,
-    difficulty: PRIORITY_MAP[task.priority_id] ?? undefined,
+    priority: PRIORITY_MAP[task.priority_id] ?? undefined,
     assignedTo: assignee?.full_name ?? `User #${task.assignee_id}`,
     assigneeId: task.assignee_id,
     assigneePhoto: assignee?.photo,

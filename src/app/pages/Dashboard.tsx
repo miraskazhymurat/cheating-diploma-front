@@ -17,12 +17,12 @@ import { useAuth } from "../context/AuthContext";
 import { taskResponseToUI } from "../../api/types";
 import { useEffect } from "react";
 
-type FilterProperty = "status" | "difficulty" | "assignee";
+type FilterProperty = "status" | "priority" | "assignee";
 interface ActiveFilter { property: FilterProperty; value: string; label: string }
 
 const PROPERTY_LABELS: Record<FilterProperty, string> = {
   status: "Status",
-  difficulty: "Difficulty",
+  priority: "Priority",
   assignee: "Assignee",
 };
 
@@ -84,7 +84,7 @@ export function Dashboard() {
   const filteredTasks = uiTasks.filter((task) =>
     activeFilters.every((f) => {
       if (f.property === "status") return String(task.statusId) === f.value;
-      if (f.property === "difficulty") return task.difficulty === f.value;
+      if (f.property === "priority") return task.priority === f.value;
       if (f.property === "assignee") return f.value === "me"
         ? task.assigneeId === Number(user?.id)
         : task.assigneeId === Number(f.value);
@@ -92,15 +92,15 @@ export function Dashboard() {
     })
   );
 
-  const difficultyOptions = [
-    { value: "easy", label: "Easy" },
+  const priorityOptions = [
+    { value: "low", label: "Low" },
     { value: "medium", label: "Medium" },
-    { value: "hard", label: "Hard" },
+    { value: "high", label: "High" },
   ];
 
   const getValueOptions = (property: FilterProperty) => {
     if (property === "status") return statuses.map((s) => ({ value: String(s.status_id), label: s.name }));
-    if (property === "difficulty") return difficultyOptions;
+    if (property === "priority") return priorityOptions;
     if (property === "assignee") return [
       { value: "me", label: "Me" },
       ...employees.map((e) => ({ value: String(e.user_id), label: e.full_name })),
@@ -142,7 +142,6 @@ export function Dashboard() {
               >
                 {board.name}
               </Link>
-              <ChevronDown className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
             </div>
             <p className="text-[12px] text-zinc-500">AI-powered task management</p>
           </div>

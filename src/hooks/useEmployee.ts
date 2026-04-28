@@ -50,6 +50,14 @@ export function useCreateEmployee() {
   });
 }
 
+export function useEmployeeProfile(id: number) {
+  return useQuery({
+    queryKey: ["employee", id, "profile"],
+    queryFn: () => employeeApi.getProfile(id),
+    enabled: id > 0,
+  });
+}
+
 export function useDeleteMember(boardId: number) {
   const queryClient = useQueryClient();
   return useMutation({

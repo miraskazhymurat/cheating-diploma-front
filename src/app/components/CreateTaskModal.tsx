@@ -1,6 +1,5 @@
 import { X, ChevronDown, Sparkles, User, Paperclip } from "lucide-react";
 import { useState } from "react";
-import { type TaskDifficulty } from "../data/mockData";
 import { useBoardEmployees } from "../../hooks/useEmployee";
 import { useCreateTask } from "../../hooks/useTasks";
 
@@ -12,21 +11,15 @@ interface CreateTaskModalProps {
 }
 
 const priorityOptions = [
-  { value: 1, label: "Low", color: "text-sky-600 dark:text-sky-400", dot: "bg-sky-500 dark:bg-sky-400" },
-  { value: 2, label: "Medium", color: "text-amber-600 dark:text-amber-400", dot: "bg-amber-500 dark:bg-amber-400" },
-  { value: 3, label: "High", color: "text-red-600 dark:text-red-400", dot: "bg-red-500 dark:bg-red-400" },
+  { value: 1, label: "Low", color: "text-zinc-400 dark:text-zinc-500", dot: "bg-zinc-300 dark:bg-zinc-600" },
+  { value: 2, label: "Medium", color: "text-zinc-600 dark:text-zinc-400", dot: "bg-zinc-500 dark:bg-zinc-400" },
+  { value: 3, label: "High", color: "text-zinc-900 dark:text-zinc-100", dot: "bg-zinc-700 dark:bg-zinc-300" },
 ];
 
-const difficultyOptions: {
-  value: TaskDifficulty;
-  id: number;
-  label: string;
-  color: string;
-  dot: string;
-}[] = [
-  { value: "easy", id: 1, label: "Easy", color: "text-emerald-600 dark:text-emerald-400", dot: "bg-emerald-500 dark:bg-emerald-400" },
-  { value: "medium", id: 2, label: "Medium", color: "text-amber-600 dark:text-amber-400", dot: "bg-amber-500 dark:bg-amber-400" },
-  { value: "hard", id: 3, label: "Hard", color: "text-red-600 dark:text-red-400", dot: "bg-red-500 dark:bg-red-400" },
+const difficultyOptions = [
+  { value: 1, label: "Easy", color: "text-zinc-400 dark:text-zinc-500", dot: "bg-zinc-300 dark:bg-zinc-600" },
+  { value: 2, label: "Medium", color: "text-zinc-600 dark:text-zinc-400", dot: "bg-zinc-500 dark:bg-zinc-400" },
+  { value: 3, label: "Hard", color: "text-zinc-900 dark:text-zinc-100", dot: "bg-zinc-700 dark:bg-zinc-300" },
 ];
 
 export function CreateTaskModal({
@@ -41,31 +34,30 @@ export function CreateTaskModal({
   const [testerId, setTesterId] = useState<number | null>(null);
   const [useAITester, setUseAITester] = useState(false);
   const [useAI, setUseAI] = useState(false);
-  const [difficulty, setDifficulty] = useState<TaskDifficulty | "">("");
-  const [useAIDifficulty, setUseAIDifficulty] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const [showTesterDropdown, setShowTesterDropdown] = useState(false);
-  const [showDifficultyDropdown, setShowDifficultyDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
+  const [difficultyId, setDifficultyId] = useState<number | null>(null);
+  const [showDifficultyDropdown, setShowDifficultyDropdown] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
 
   const closeAllDropdowns = () => {
     setShowAssigneeDropdown(false);
     setShowTesterDropdown(false);
-    setShowDifficultyDropdown(false);
     setShowPriorityDropdown(false);
+    setShowDifficultyDropdown(false);
   };
 
-  const toggleDropdown = (name: "assignee" | "tester" | "difficulty" | "priority") => {
-    const current = { assignee: showAssigneeDropdown, tester: showTesterDropdown, difficulty: showDifficultyDropdown, priority: showPriorityDropdown }[name];
+  const toggleDropdown = (name: "assignee" | "tester" | "priority" | "difficulty") => {
+    const current = { assignee: showAssigneeDropdown, tester: showTesterDropdown, priority: showPriorityDropdown, difficulty: showDifficultyDropdown }[name];
     closeAllDropdowns();
     if (!current) {
       if (name === "assignee") setShowAssigneeDropdown(true);
       else if (name === "tester") setShowTesterDropdown(true);
-      else if (name === "difficulty") setShowDifficultyDropdown(true);
-      else setShowPriorityDropdown(true);
+      else if (name === "priority") setShowPriorityDropdown(true);
+      else setShowDifficultyDropdown(true);
     }
   };
-  const [files, setFiles] = useState<File[]>([]);
 
   const { data: employees = [] } = useBoardEmployees(boardId);
   const createTask = useCreateTask(boardId);
@@ -74,8 +66,8 @@ export function CreateTaskModal({
 
   const selectedAssignee = employees.find((e) => e.user_id === assigneeId);
   const selectedTester = employees.find((e) => e.user_id === testerId);
-  const selectedDifficulty = difficultyOptions.find((d) => d.value === difficulty);
   const selectedPriority = priorityOptions.find((p) => p.value === priorityId);
+  const selectedDifficulty = difficultyOptions.find((d) => d.value === difficultyId);
 
   const handleCreate = async () => {
     if (!title.trim()) return;
@@ -84,7 +76,7 @@ export function CreateTaskModal({
       title,
       description: description || undefined,
       priority_id: priorityId ?? undefined,
-      difficulty_id: selectedDifficulty?.id,
+      difficulty_id: difficultyId ?? undefined,
       assignee_id: useAI ? undefined : assigneeId ?? undefined,
       tester_id: useAITester ? undefined : testerId ?? undefined,
       files: files.length > 0 ? files : undefined,
@@ -94,12 +86,11 @@ export function CreateTaskModal({
     setTitle("");
     setDescription("");
     setPriorityId(null);
+    setDifficultyId(null);
     setAssigneeId(null);
     setTesterId(null);
     setUseAI(false);
     setUseAITester(false);
-    setDifficulty("");
-    setUseAIDifficulty(false);
     setFiles([]);
   };
 
@@ -123,17 +114,6 @@ export function CreateTaskModal({
       setTesterId(id);
     }
     setShowTesterDropdown(false);
-  };
-
-  const handleDifficultySelect = (val: TaskDifficulty | "ai") => {
-    if (val === "ai") {
-      setUseAIDifficulty(true);
-      setDifficulty("");
-    } else {
-      setUseAIDifficulty(false);
-      setDifficulty(val);
-    }
-    setShowDifficultyDropdown(false);
   };
 
   return (
@@ -374,13 +354,8 @@ export function CreateTaskModal({
                       onClick={() => toggleDropdown("difficulty")}
                       className="w-full px-3 py-2 text-[13px] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-700 focus:border-zinc-400 dark:focus:border-zinc-700 text-zinc-900 dark:text-zinc-100 flex items-center justify-between hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
                     >
-                      <span className={useAIDifficulty || difficulty ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400 dark:text-zinc-600"}>
-                        {useAIDifficulty ? (
-                          <span className="flex items-center gap-2">
-                            <Sparkles className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" />
-                            Let AI detect
-                          </span>
-                        ) : selectedDifficulty ? (
+                      <span className={selectedDifficulty ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400 dark:text-zinc-600"}>
+                        {selectedDifficulty ? (
                           <span className="flex items-center gap-2">
                             <span className={`w-2 h-2 rounded-full ${selectedDifficulty.dot}`} />
                             <span className={selectedDifficulty.color}>{selectedDifficulty.label}</span>
@@ -394,23 +369,12 @@ export function CreateTaskModal({
 
                     {showDifficultyDropdown && (
                       <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-xl z-10 overflow-hidden">
-                        <button
-                          onClick={() => handleDifficultySelect("ai")}
-                          className={`w-full px-3 py-2.5 text-[13px] text-left hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors border-b border-zinc-200 dark:border-zinc-800 ${
-                            useAIDifficulty ? "bg-violet-50 dark:bg-violet-950/30" : ""
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Sparkles className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" />
-                            <span className="text-zinc-900 dark:text-zinc-100">Let AI detect difficulty</span>
-                          </div>
-                        </button>
                         {difficultyOptions.map((opt) => (
                           <button
                             key={opt.value}
-                            onClick={() => handleDifficultySelect(opt.value)}
+                            onClick={() => { setDifficultyId(opt.value); setShowDifficultyDropdown(false); }}
                             className={`w-full px-3 py-2.5 text-[13px] text-left hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-3 ${
-                              difficulty === opt.value && !useAIDifficulty ? "bg-zinc-100 dark:bg-zinc-800" : ""
+                              difficultyId === opt.value ? "bg-zinc-100 dark:bg-zinc-800" : ""
                             }`}
                           >
                             <span className={`w-2 h-2 rounded-full ${opt.dot}`} />
@@ -421,6 +385,7 @@ export function CreateTaskModal({
                     )}
                   </div>
                 </div>
+
               </div>
 
               {/* Attachments */}

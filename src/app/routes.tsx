@@ -65,6 +65,14 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: "/profile/:userId",
+    element: (
+      <ProtectedRoute>
+        <Profile />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: "/login",
     element: <Login />,
   },

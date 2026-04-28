@@ -4,10 +4,10 @@ import { useState } from "react";
 import { TaskModal } from "./TaskModal";
 
 
-const difficultyConfig: Record<string, { label: string; className: string; dot: string }> = {
-  easy: { label: "Easy", className: "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/50", dot: "bg-emerald-500 dark:bg-emerald-400" },
+const priorityConfig: Record<string, { label: string; className: string; dot: string }> = {
+  low: { label: "Low", className: "bg-sky-50 text-sky-600 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900/50", dot: "bg-sky-500 dark:bg-sky-400" },
   medium: { label: "Medium", className: "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50", dot: "bg-amber-500 dark:bg-amber-400" },
-  hard: { label: "Hard", className: "bg-red-50 text-red-600 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50", dot: "bg-red-500 dark:bg-red-400" },
+  high: { label: "High", className: "bg-red-50 text-red-600 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50", dot: "bg-red-500 dark:bg-red-400" },
 };
 
 interface TaskListProps {
@@ -60,8 +60,8 @@ export function TaskList({ tasks, statuses, boardId }: TaskListProps) {
                     {task.estimatedTime && (
                       <span className="text-[11px] text-zinc-400 dark:text-zinc-600">{task.estimatedTime}</span>
                     )}
-                    {task.difficulty && difficultyConfig[task.difficulty] && (() => {
-                      const d = difficultyConfig[task.difficulty!];
+                    {task.priority && priorityConfig[task.priority] && (() => {
+                      const d = priorityConfig[task.priority!];
                       return (
                         <Badge variant="outline" className={`text-[10px] px-2 py-0 h-5 flex items-center gap-1 ${d.className}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${d.dot}`} />
