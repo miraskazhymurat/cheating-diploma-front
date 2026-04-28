@@ -49,8 +49,8 @@ const achievementList: Achievement[] = [
   { id: "influencer",    emoji: "📣", label: "Influencer",    group: "content",  levels: ["50 replies received",                  "300 replies received",                "1000 replies received"            ], currentLevel: 0 },
   { id: "voicepioneer",  emoji: "🎙️", label: "Voice Pioneer", group: "content",  levels: ["20 voice messages",                    "100 voice messages",                  "1000 voice messages"              ], currentLevel: 0 },
   { id: "broadcaster",   emoji: "🎬", label: "Broadcaster",   group: "content",  levels: ["20 video messages",                    "100 video messages",                  "1000 video messages"              ], currentLevel: 0 },
-  { id: "legend",        emoji: "👑", label: "Legend",        group: "prestige", levels: ["10 level III achievements",            "10 level III achievements",           "10 level III achievements"        ], currentLevel: 0 },
-  { id: "master",        emoji: "🌟", label: "Master",        group: "prestige", levels: ["25 achievements total",                "25 achievements total",               "25 achievements total"            ], currentLevel: 0 },
+  { id: "legend",        emoji: "👑", label: "Legend",        group: "prestige", levels: ["10 level III achievements",            "10 level III achievements",           "10 level III achievements"        ], currentLevel: 1 },
+  { id: "master",        emoji: "🌟", label: "Master",        group: "prestige", levels: ["25 achievements total",                "25 achievements total",               "25 achievements total"            ], currentLevel: 3 },
   { id: "grandmaster",   emoji: "⭐", label: "Grandmaster",   group: "prestige", levels: ["50 achievements total",                "50 achievements total",               "50 achievements total"            ], currentLevel: 0 },
 ];
 
@@ -471,6 +471,21 @@ export function Profile() {
                   <label className="text-[11px] text-zinc-600 dark:text-zinc-400 block mb-2">Birthday</label>
                   <input type="text" value={employee.birthday ?? "—"} disabled className="w-full px-3 py-2 text-[13px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md text-zinc-900 dark:text-zinc-100 opacity-50" />
                 </div>
+                <div>
+                  <label className="text-[11px] text-zinc-600 dark:text-zinc-400 block mb-2">Gender</label>
+                  <input
+                    type="text"
+                    value={(() => {
+                      const code = employee.gender?.code ?? employee.gender?.Code;
+                      if (code === "male") return "Male";
+                      if (code === "female") return "Female";
+                      if (code === "other") return "Other";
+                      return employee.gender?.name ?? employee.gender?.Name ?? "—";
+                    })()}
+                    disabled
+                    className="w-full px-3 py-2 text-[13px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md text-zinc-900 dark:text-zinc-100 opacity-50"
+                  />
+                </div>
                 {isEditing && (
                   <div className="flex items-center gap-2 pt-2">
                     <button onClick={handleSave} disabled={updateEmployee.isPending} className="text-[12px] px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-zinc-100 dark:text-zinc-900 rounded-md hover:bg-zinc-700 dark:hover:bg-white transition-colors disabled:opacity-60">
@@ -512,31 +527,6 @@ export function Profile() {
 
           {/* Sidebar */}
           <div className="order-1 lg:order-2 space-y-6">
-            <div className="p-6 rounded-lg bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800">
-              <h3 className="text-[12px] text-zinc-600 dark:text-zinc-400 mb-4">Account</h3>
-              <div className="space-y-3 text-[12px]">
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Gender</span>
-                  <span className="text-zinc-700 dark:text-zinc-300">
-                    {(() => {
-                      const code = employee.gender?.code ?? employee.gender?.Code;
-                      if (code === "male") return "Male";
-                      if (code === "female") return "Female";
-                      if (code === "other") return "Other";
-                      return employee.gender?.name ?? employee.gender?.Name ?? "—";
-                    })()}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Active days</span>
-                  <span className="text-zinc-700 dark:text-zinc-300">{activeDays}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Contributions</span>
-                  <span className="text-zinc-700 dark:text-zinc-300">{totalActivity}</span>
-                </div>
-              </div>
-            </div>
 
             {/* Achievements */}
             <div className="p-6 rounded-lg bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800">
@@ -569,7 +559,7 @@ export function Profile() {
               {achievementFilter === "unlocked" ? (
                 /* Unlocked — flat list, fixed height */
                 <div
-                  className="h-[252px] overflow-y-auto space-y-2 pr-0.5"
+                  className="h-[380px] overflow-y-auto space-y-2 pr-0.5"
                   style={{ scrollbarWidth: "thin", scrollbarColor: "rgb(161 161 170) transparent" }}
                 >
                   {achievementList.filter((a) => a.currentLevel > 0).length === 0 ? (
@@ -626,7 +616,7 @@ export function Profile() {
 
               {/* Fixed-height achievement list */}
               <div
-                className="h-[252px] overflow-y-auto space-y-2 pr-0.5"
+                className="h-[380px] overflow-y-auto space-y-2 pr-0.5"
                 style={{ scrollbarWidth: "thin", scrollbarColor: "rgb(161 161 170) transparent" }}
                 onTouchStart={(e) => { swipeTouchX.current = e.touches[0].clientX; }}
                 onTouchEnd={(e) => {
