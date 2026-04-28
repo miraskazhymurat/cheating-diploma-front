@@ -13,7 +13,7 @@ import { useBoard } from "../../hooks/useBoards";
 import { useBoardTasks } from "../../hooks/useTasks";
 import { useBoardEmployees } from "../../hooks/useEmployee";
 import { useBoardStatuses } from "../../hooks/useStatuses";
-import { useBoardEvents } from "../../hooks/useBoardEvents";
+import { useBoardWebSocket } from "../../hooks/useBoardWebSocket";
 import { useAuth } from "../context/AuthContext";
 import { taskResponseToUI } from "../../api/types";
 import { useEffect } from "react";
@@ -59,7 +59,7 @@ export function Dashboard() {
   const { data: employees = [] } = useBoardEmployees(boardId);
   const { data: statuses = [] } = useBoardStatuses(boardId);
 
-  useBoardEvents(boardId);
+  useBoardWebSocket(boardId);
 
   if (boardLoading) {
     return (

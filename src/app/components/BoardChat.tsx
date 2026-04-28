@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
 import { MessageCircle, X, Send, Users, Reply, Paperclip, FileText, Play, Pause, Music, Mic, Trash2, Video, ChevronsDown, BarChart2, Plus, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import { useChatMessages, useSendMessage, useDeleteMessage, useCreatePoll, useVotePoll, useUnvotePoll } from "../../hooks/useChat";
-import { useChatWebSocket } from "../../hooks/useChatWebSocket";
 import { useAuth } from "../context/AuthContext";
 import { useMe } from "../../hooks/useEmployee";
 import type { ChatMessage, ChatReplyTo } from "../../api/chat";
@@ -580,8 +579,6 @@ export function BoardChat({ boardId, boardName, memberCount, defaultOpen = false
   const sendMessage = useSendMessage(boardId);
   const deleteMessage = useDeleteMessage(boardId);
   const createPoll = useCreatePoll(boardId);
-
-  useChatWebSocket(boardId);
 
   const messages = data?.pages.flatMap((page) => page) ?? [];
   const prevScrollHeightRef = useRef<number>(0);
