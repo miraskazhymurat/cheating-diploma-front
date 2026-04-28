@@ -109,6 +109,7 @@ export function Profile() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [achievementPage, setAchievementPage] = useState(0);
+  const swipeTouchX = useRef<number | null>(null);
 
   const today = new Date();
   const currentYear = today.getFullYear();
@@ -567,7 +568,22 @@ export function Profile() {
               </div>
 
               {/* Fixed-height achievement list */}
-              <div className="h-[252px] overflow-y-auto space-y-2 pr-0.5" style={{ scrollbarWidth: "thin", scrollbarColor: "rgb(161 161 170) transparent" }}>
+              <div
+                className="h-[252px] overflow-y-auto space-y-2 pr-0.5"
+                style={{ scrollbarWidth: "thin", scrollbarColor: "rgb(161 161 170) transparent" }}
+                onTouchStart={(e) => { swipeTouchX.current = e.touches[0].clientX; }}
+                onTouchEnd={(e) => {
+                  if (swipeTouchX.current === null) return;
+                  const dx = e.changedTouches[0].clientX - swipeTouchX.current;
+                  swipeTouchX.current = null;
+                  if (Math.abs(dx) < 40) return;
+                  setAchievementPage((p) =>
+                    dx < 0
+                      ? (p + 1) % ACHIEVEMENT_GROUPS.length
+                      : (p - 1 + ACHIEVEMENT_GROUPS.length) % ACHIEVEMENT_GROUPS.length
+                  );
+                }}
+              >
                 {achievementList
                   .filter((a) => a.group === ACHIEVEMENT_GROUPS[achievementPage].key)
                   .sort((a, b) => b.currentLevel - a.currentLevel)
