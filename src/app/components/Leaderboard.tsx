@@ -22,6 +22,17 @@ function nextLevel(pts: number) {
   return LEVELS.find((l) => l.min > pts) ?? null;
 }
 
+// ── Board labels ─────────────────────────────────────────────────────────────
+
+const BOARD_LABELS = [
+  { id: "challenger",   emoji: "⚔️",  name: "Challenger",   desc: "Most hard tasks in this board",     ring: "ring-red-400/50",     bg: "bg-red-50 dark:bg-red-950/40",       text: "text-red-500 dark:text-red-400"     },
+  { id: "pollmaster",   emoji: "🗳️",  name: "Poll Master",  desc: "Most polls created in this board",  ring: "ring-sky-400/50",     bg: "bg-sky-50 dark:bg-sky-950/40",       text: "text-sky-500 dark:text-sky-400"     },
+  { id: "communicator", emoji: "💬",  name: "Communicator", desc: "Most messages in this board",       ring: "ring-emerald-400/50", bg: "bg-emerald-50 dark:bg-emerald-950/40",text: "text-emerald-500 dark:text-emerald-400" },
+  { id: "finisher",     emoji: "⚡",  name: "Finisher",     desc: "Most completed tasks in this board",ring: "ring-amber-400/50",   bg: "bg-amber-50 dark:bg-amber-950/40",   text: "text-amber-500 dark:text-amber-400" },
+] as const;
+
+type BoardLabelId = typeof BOARD_LABELS[number]["id"];
+
 // ── Trophies ──────────────────────────────────────────────────────────────────
 
 const TROPHIES = [
@@ -58,6 +69,10 @@ interface GEntry {
   pts30d: number;
   totalPts: number;
   streak: number;
+  hardTasks: number;
+  polls: number;
+  messages: number;
+  completedTasks: number;
 }
 
 function buildEntries(employees: EmployeeResponse[]): GEntry[] {
@@ -66,12 +81,32 @@ function buildEntries(employees: EmployeeResponse[]): GEntry[] {
       const s = emp.user_id;
       return {
         emp,
-        pts30d:   Math.round(150 + pseudoRand(s, 10) * 1050),
-        totalPts: Math.round(200 + pseudoRand(s, 11) * 2800),
-        streak:   Math.round(pseudoRand(s, 12) * 21),
+        pts30d:        Math.round(150 + pseudoRand(s, 10) * 1050),
+        totalPts:      Math.round(200 + pseudoRand(s, 11) * 2800),
+        streak:        Math.round(pseudoRand(s, 12) * 21),
+        hardTasks:     Math.round(pseudoRand(s, 13) * 40),
+        polls:         Math.round(pseudoRand(s, 14) * 80),
+        messages:      Math.round(pseudoRand(s, 15) * 300),
+        completedTasks:Math.round(pseudoRand(s, 16) * 120),
       };
     })
     .sort((a, b) => b.pts30d - a.pts30d);
+}
+
+function computeBoardLabels(entries: GEntry[]): Map<number, BoardLabelId[]> {
+  const statKeys: { id: BoardLabelId; key: keyof GEntry }[] = [
+    { id: "challenger",   key: "hardTasks"      },
+    { id: "pollmaster",   key: "polls"          },
+    { id: "communicator", key: "messages"       },
+    { id: "finisher",     key: "completedTasks" },
+  ];
+  const map = new Map<number, BoardLabelId[]>();
+  for (const { id, key } of statKeys) {
+    const winner = entries.reduce((best, e) => (e[key] as number) > (best[key] as number) ? e : best);
+    const prev = map.get(winner.emp.user_id) ?? [];
+    map.set(winner.emp.user_id, [...prev, id]);
+  }
+  return map;
 }
 
 // ── Small avatar ──────────────────────────────────────────────────────────────
@@ -102,6 +137,7 @@ interface LeaderboardProps {
 export function Leaderboard({ employees, currentUserId }: LeaderboardProps) {
   const [showRules, setShowRules] = useState(false);
   const entries = useMemo(() => buildEntries(employees), [employees]);
+  const boardLabels = useMemo(() => computeBoardLabels(entries), [entries]);
 
   const me = entries.find((e) => e.emp.user_id === currentUserId);
   const myRank = entries.findIndex((e) => e.emp.user_id === currentUserId) + 1;
@@ -233,6 +269,28 @@ export function Leaderboard({ employees, currentUserId }: LeaderboardProps) {
                     </div>
                   )}
                 </div>
+
+                {/* Board label badges */}
+                {(boardLabels.get(entry.emp.user_id) ?? []).length > 0 && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    {(boardLabels.get(entry.emp.user_id) ?? []).map((labelId) => {
+                      const lbl = BOARD_LABELS.find((l) => l.id === labelId)!;
+                      return (
+                        <div key={labelId} className="relative group/lbl">
+                          <span className="text-[11px] leading-none cursor-default select-none">{lbl.emoji}</span>
+                          {/* Tooltip */}
+                          <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/lbl:block z-50">
+                            <div className="bg-zinc-900 dark:bg-zinc-700 text-white rounded-md px-2.5 py-1.5 shadow-lg whitespace-nowrap">
+                              <p className={`text-[11px] font-semibold ${lbl.text}`}>{lbl.name}</p>
+                              <p className="text-[10px] text-zinc-400 mt-0.5">{lbl.desc}</p>
+                            </div>
+                            <div className="w-2 h-1 bg-zinc-900 dark:bg-zinc-700 mx-auto [clip-path:polygon(0_0,100%_0,50%_100%)]" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* 30-day pts */}
                 <span className="text-[12px] font-semibold text-zinc-700 dark:text-zinc-300 tabular-nums shrink-0">

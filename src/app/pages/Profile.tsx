@@ -109,6 +109,7 @@ export function Profile() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [achievementPage, setAchievementPage] = useState(0);
+  const [achievementFilter, setAchievementFilter] = useState<"unlocked" | "all">("all");
   const swipeTouchX = useRef<number | null>(null);
 
   const today = new Date();
@@ -540,7 +541,7 @@ export function Profile() {
             {/* Achievements */}
             <div className="p-6 rounded-lg bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800">
               {/* Header */}
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-3">
                 <Trophy className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                 <h3 className="text-[12px] text-zinc-600 dark:text-zinc-400">Achievements</h3>
                 <span className="ml-auto text-[11px] text-zinc-400 dark:text-zinc-600">
@@ -548,8 +549,64 @@ export function Profile() {
                 </span>
               </div>
 
-              {/* Carousel header: arrow + group title + arrow */}
-              <div className="flex items-center justify-between mb-3">
+              {/* Filter toggle */}
+              <div className="flex gap-1 p-0.5 bg-zinc-100 dark:bg-zinc-800 rounded-md mb-4">
+                {(["unlocked", "all"] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setAchievementFilter(f)}
+                    className={`flex-1 text-[11px] py-1 rounded transition-colors capitalize ${
+                      achievementFilter === f
+                        ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                    }`}
+                  >
+                    {f === "unlocked" ? `Unlocked (${achievementList.filter((a) => a.currentLevel > 0).length})` : "All"}
+                  </button>
+                ))}
+              </div>
+
+              {achievementFilter === "unlocked" ? (
+                /* Unlocked — flat list, fixed height */
+                <div
+                  className="h-[252px] overflow-y-auto space-y-2 pr-0.5"
+                  style={{ scrollbarWidth: "thin", scrollbarColor: "rgb(161 161 170) transparent" }}
+                >
+                  {achievementList.filter((a) => a.currentLevel > 0).length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center gap-2 text-zinc-400 dark:text-zinc-600">
+                      <Trophy className="w-6 h-6 opacity-40" />
+                      <p className="text-[11px]">No achievements yet</p>
+                    </div>
+                  ) : (
+                    achievementList
+                      .filter((a) => a.currentLevel > 0)
+                      .sort((a, b) => b.currentLevel - a.currentLevel)
+                      .map((a) => {
+                        const lvl = a.currentLevel;
+                        const style = LEVEL_STYLES[lvl];
+                        return (
+                          <div
+                            key={a.id}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-md bg-zinc-50 dark:bg-zinc-800/60 ${style.border}`}
+                          >
+                            <span className="text-[18px] leading-none">{a.emoji}</span>
+                            <div className="min-w-0">
+                              <p className="text-[12px] text-zinc-800 dark:text-zinc-200 leading-tight">{a.label}</p>
+                              <p className="text-[10px] text-zinc-500 mt-0.5 leading-tight truncate">{a.levels[lvl - 1]}</p>
+                            </div>
+                            <span className={`ml-auto shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${style.badge}`}>
+                              {style.badgeText}
+                            </span>
+                          </div>
+                        );
+                      })
+                  )}
+                </div>
+              ) : (
+                /* All — carousel by group */
+                <>
+                  {/* Carousel header: arrow + group title + arrow */}
+                  <div className="flex items-center justify-between mb-3">
                 <button
                   onClick={() => setAchievementPage((p) => (p - 1 + ACHIEVEMENT_GROUPS.length) % ACHIEVEMENT_GROUPS.length)}
                   className="p-1 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
@@ -627,6 +684,8 @@ export function Profile() {
                   />
                 ))}
               </div>
+                </>
+              )}
             </div>
           </div>
         </div>
