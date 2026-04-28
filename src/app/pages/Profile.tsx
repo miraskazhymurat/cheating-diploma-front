@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Activity, Camera, Lock, Trophy, User } from "lucide-react";
+import { Activity, Camera, ChevronLeft, ChevronRight, Lock, Trophy, User } from "lucide-react";
 import { useParams, useLocation, useNavigate } from "react-router";
 import { ArrowLeft, MessageCircle } from "lucide-react";
 import { useMe, useUpdateEmployee, useEmployeeActivities, useEmployeeProfile } from "../../hooks/useEmployee";
@@ -108,7 +108,7 @@ export function Profile() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [achievementTab, setAchievementTab] = useState<AchievementGroup>("tasks");
+  const [achievementPage, setAchievementPage] = useState(0);
 
   const today = new Date();
   const currentYear = today.getFullYear();
@@ -538,32 +538,38 @@ export function Profile() {
 
             {/* Achievements */}
             <div className="p-6 rounded-lg bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800">
-              <div className="flex items-center gap-2 mb-3">
+              {/* Header */}
+              <div className="flex items-center gap-2 mb-4">
                 <Trophy className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                 <h3 className="text-[12px] text-zinc-600 dark:text-zinc-400">Achievements</h3>
                 <span className="ml-auto text-[11px] text-zinc-400 dark:text-zinc-600">
                   {achievementList.filter((a) => a.currentLevel > 0).length}/{achievementList.length}
                 </span>
               </div>
-              {/* Group tabs */}
-              <div className="flex gap-1 mb-3 flex-wrap">
-                {ACHIEVEMENT_GROUPS.map(({ key, label }) => (
-                  <button
-                    key={key}
-                    onClick={() => setAchievementTab(key)}
-                    className={`text-[10px] px-2.5 py-1 rounded transition-colors ${
-                      achievementTab === key
-                        ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
-                        : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
+
+              {/* Carousel header: arrow + group title + arrow */}
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  onClick={() => setAchievementPage((p) => (p - 1 + ACHIEVEMENT_GROUPS.length) % ACHIEVEMENT_GROUPS.length)}
+                  className="p-1 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 tracking-wide uppercase">
+                  {ACHIEVEMENT_GROUPS[achievementPage].label}
+                </span>
+                <button
+                  onClick={() => setAchievementPage((p) => (p + 1) % ACHIEVEMENT_GROUPS.length)}
+                  className="p-1 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <div className="space-y-2">
+
+              {/* Fixed-height achievement list */}
+              <div className="h-[252px] overflow-y-auto space-y-2 pr-0.5" style={{ scrollbarWidth: "thin", scrollbarColor: "rgb(161 161 170) transparent" }}>
                 {achievementList
-                  .filter((a) => a.group === achievementTab)
+                  .filter((a) => a.group === ACHIEVEMENT_GROUPS[achievementPage].key)
                   .sort((a, b) => b.currentLevel - a.currentLevel)
                   .map((a) => {
                     const lvl = a.currentLevel;
@@ -589,6 +595,21 @@ export function Profile() {
                       </div>
                     );
                   })}
+              </div>
+
+              {/* Dot indicators */}
+              <div className="flex items-center justify-center gap-1.5 mt-3">
+                {ACHIEVEMENT_GROUPS.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setAchievementPage(i)}
+                    className={`rounded-full transition-all ${
+                      i === achievementPage
+                        ? "w-3 h-1.5 bg-zinc-500 dark:bg-zinc-400"
+                        : "w-1.5 h-1.5 bg-zinc-300 dark:bg-zinc-700 hover:bg-zinc-400 dark:hover:bg-zinc-600"
+                    }`}
+                  />
+                ))}
               </div>
             </div>
           </div>
