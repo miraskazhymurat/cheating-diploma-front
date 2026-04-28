@@ -318,10 +318,6 @@ export function Dashboard() {
               ) : (
                 <div className="space-y-8">
                   <div>
-                    <h2 className="text-[13px] text-zinc-500 dark:text-zinc-400 mb-4 px-3">Team Workload</h2>
-                    <TeamWorkload employees={boardMembers} />
-                  </div>
-                  <div>
                     <h2 className="text-[13px] text-zinc-500 dark:text-zinc-400 mb-4 px-3">Leaderboard</h2>
                     <Leaderboard employees={employees} currentUserId={user?.id} />
                   </div>
@@ -372,10 +368,6 @@ export function Dashboard() {
                 <AIInsights burnoutAlerts={burnoutAlerts} promotionCandidates={promotionCandidates} />
               ) : (
                 <div className="space-y-8">
-                  <div>
-                    <h2 className="text-[13px] text-zinc-500 dark:text-zinc-400 mb-4 px-3">Team Workload</h2>
-                    <TeamWorkload employees={boardMembers} />
-                  </div>
                   <div>
                     <h2 className="text-[13px] text-zinc-500 dark:text-zinc-400 mb-4 px-3">Leaderboard</h2>
                     <Leaderboard employees={employees} currentUserId={user?.id} />
