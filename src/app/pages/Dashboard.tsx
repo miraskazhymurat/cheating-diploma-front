@@ -8,7 +8,7 @@ import { BoardChat } from "../components/BoardChat";
 import { burnoutAlerts, promotionCandidates } from "../data/mockData";
 import { LayoutList, LayoutGrid, Settings, ChevronDown, Plus, Sparkles, Users, SlidersHorizontal, X, Video } from "lucide-react";
 import { useRef, useState } from "react";
-import { useParams, Link } from "react-router";
+import { useParams, Link, useLocation } from "react-router";
 import { useBoard } from "../../hooks/useBoards";
 import { useBoardTasks } from "../../hooks/useTasks";
 import { useBoardEmployees } from "../../hooks/useEmployee";
@@ -30,6 +30,8 @@ const PROPERTY_LABELS: Record<FilterProperty, string> = {
 export function Dashboard() {
   const { boardId: boardIdParam } = useParams();
   const boardId = Number(boardIdParam);
+  const { state: locationState } = useLocation();
+  const openChatOnMount = (locationState as { openChat?: boolean } | null)?.openChat ?? false;
   const { user } = useAuth();
 
   const [viewMode, setViewMode] = useState<"list" | "board">("list");
@@ -390,6 +392,7 @@ export function Dashboard() {
         boardId={boardId}
         boardName={board.name}
         memberCount={employees.length}
+        defaultOpen={openChatOnMount}
       />
     </div>
   );

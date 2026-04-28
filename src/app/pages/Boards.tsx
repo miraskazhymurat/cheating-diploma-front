@@ -12,9 +12,10 @@ export function Boards() {
   const { data, isLoading } = useDashboard();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isNotionModalOpen, setIsNotionModalOpen] = useState(false);
+  const [profileCompleted, setProfileCompleted] = useState(false);
 
   const userBoards = data?.boards ?? [];
-  const isFirstLogin = data?.isFirstLogin ?? false;
+  const isFirstLogin = (data?.isFirstLogin ?? false) && !profileCompleted;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -110,7 +111,7 @@ export function Boards() {
 
       <CreateProfileModal
         isOpen={isFirstLogin}
-        onComplete={() => {}}
+        onComplete={() => setProfileCompleted(true)}
       />
       <CreateBoardModal
         isOpen={isCreateModalOpen}

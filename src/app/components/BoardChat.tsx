@@ -90,6 +90,7 @@ interface BoardChatProps {
   boardId: number;
   boardName: string;
   memberCount: number;
+  defaultOpen?: boolean;
 }
 
 function formatTime(iso: string) {
@@ -539,8 +540,8 @@ function MessageBubble({
   );
 }
 
-export function BoardChat({ boardId, boardName, memberCount }: BoardChatProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function BoardChat({ boardId, boardName, memberCount, defaultOpen = false }: BoardChatProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const [input, setInput] = useState("");
   const [replyTo, setReplyTo] = useState<ChatReplyTo | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);

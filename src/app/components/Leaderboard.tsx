@@ -1,5 +1,5 @@
 import { Flame, Star } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import type { EmployeeResponse } from "../../api/types";
 
@@ -136,8 +136,25 @@ interface LeaderboardProps {
 
 export function Leaderboard({ employees, currentUserId }: LeaderboardProps) {
   const [showRules, setShowRules] = useState(false);
+  const [openTooltip, setOpenTooltip] = useState<string | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const entries = useMemo(() => buildEntries(employees), [employees]);
   const boardLabels = useMemo(() => computeBoardLabels(entries), [entries]);
+
+  useEffect(() => {
+    if (!openTooltip) return;
+    const close = (e: MouseEvent | TouchEvent) => {
+      if (tooltipRef.current && !tooltipRef.current.contains(e.target as Node)) {
+        setOpenTooltip(null);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("touchstart", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("touchstart", close);
+    };
+  }, [openTooltip]);
 
   const me = entries.find((e) => e.emp.user_id === currentUserId);
   const myRank = entries.findIndex((e) => e.emp.user_id === currentUserId) + 1;
@@ -272,19 +289,30 @@ export function Leaderboard({ employees, currentUserId }: LeaderboardProps) {
 
                 {/* Board label badges */}
                 {(boardLabels.get(entry.emp.user_id) ?? []).length > 0 && (
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0" ref={tooltipRef}>
                     {(boardLabels.get(entry.emp.user_id) ?? []).map((labelId) => {
                       const lbl = BOARD_LABELS.find((l) => l.id === labelId)!;
+                      const tooltipKey = `${entry.emp.user_id}-${labelId}`;
+                      const isOpen = openTooltip === tooltipKey;
                       return (
                         <div key={labelId} className="relative group/lbl">
-                          <span className="text-[11px] leading-none cursor-default select-none">{lbl.emoji}</span>
-                          {/* Tooltip */}
-                          <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/lbl:block z-50">
-                            <div className="bg-zinc-900 dark:bg-zinc-700 text-white rounded-md px-2.5 py-1.5 shadow-lg whitespace-nowrap">
+                          <span
+                            className="text-[11px] leading-none cursor-pointer select-none"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setOpenTooltip(isOpen ? null : tooltipKey);
+                            }}
+                          >
+                            {lbl.emoji}
+                          </span>
+                          {/* Tooltip — visible on hover (desktop) or tap (mobile) */}
+                          <div className={`pointer-events-none absolute bottom-full right-0 mb-1.5 z-50 ${isOpen ? "block" : "hidden group-hover/lbl:block"}`}>
+                            <div className="bg-zinc-900 dark:bg-zinc-700 text-white rounded-md px-2.5 py-1.5 shadow-lg w-max max-w-[160px]">
                               <p className={`text-[11px] font-semibold ${lbl.text}`}>{lbl.name}</p>
-                              <p className="text-[10px] text-zinc-400 mt-0.5">{lbl.desc}</p>
+                              <p className="text-[10px] text-zinc-400 mt-0.5 whitespace-normal">{lbl.desc}</p>
                             </div>
-                            <div className="w-2 h-1 bg-zinc-900 dark:bg-zinc-700 mx-auto [clip-path:polygon(0_0,100%_0,50%_100%)]" />
+                            <div className="w-2 h-1 bg-zinc-900 dark:bg-zinc-700 ml-auto mr-1 [clip-path:polygon(0_0,100%_0,50%_100%)]" />
                           </div>
                         </div>
                       );

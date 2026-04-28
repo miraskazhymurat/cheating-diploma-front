@@ -34,7 +34,7 @@ export function Header() {
             <LayoutGrid className="w-3.5 h-3.5 text-zinc-100 dark:text-zinc-900" />
           </div>
           <span className="text-[13px] text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors">
-            TaskAI
+            QuryltAI
           </span>
         </Link>
 

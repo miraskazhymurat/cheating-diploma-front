@@ -259,7 +259,7 @@ export function Profile() {
               <span>Viewing from board chat</span>
             </div>
             <button
-              onClick={() => navigate(`/board/${fromChat.boardId}`)}
+              onClick={() => navigate(`/board/${fromChat.boardId}`, { state: { openChat: true } })}
               className="flex items-center gap-1.5 text-[12px] text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
