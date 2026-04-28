@@ -13,68 +13,53 @@ const getActivityColor = (level: number) => {
   return "bg-emerald-400 border-emerald-500 dark:bg-emerald-600/60 dark:border-emerald-600/70";
 };
 
-type AchievementEntry = {
+type AchievementGroup = "tasks" | "activity" | "social" | "content" | "prestige";
+
+type Achievement = {
   id: string;
   emoji: string;
   label: string;
-  desc: string;
-  level: 1 | 2 | 3;
-  unlocked: boolean;
+  group: AchievementGroup;
+  levels: [string, string, string]; // desc for each level
+  currentLevel: 0 | 1 | 2 | 3;     // 0 = locked
 };
 
-const achievementCategories: AchievementEntry[] = [
-  { id: "closer-1",        emoji: "🎯", label: "Closer I",        desc: "Complete 10 tasks",                       level: 1, unlocked: false },
-  { id: "closer-2",        emoji: "🎯", label: "Closer II",       desc: "Complete 50 tasks",                       level: 2, unlocked: false },
-  { id: "closer-3",        emoji: "🎯", label: "Closer III",      desc: "Complete 200 tasks",                      level: 3, unlocked: false },
-  { id: "finisher-1",      emoji: "✅", label: "Finisher I",      desc: "Finish 5 tasks before deadline",          level: 1, unlocked: false },
-  { id: "finisher-2",      emoji: "✅", label: "Finisher II",     desc: "Finish 20 tasks before deadline",         level: 2, unlocked: false },
-  { id: "finisher-3",      emoji: "✅", label: "Finisher III",    desc: "Finish 50 tasks before deadline",         level: 3, unlocked: false },
-  { id: "challenger-1",    emoji: "⚔️", label: "Challenger I",    desc: "Complete 10 hard tasks",                  level: 1, unlocked: false },
-  { id: "challenger-2",    emoji: "⚔️", label: "Challenger II",   desc: "Complete 50 hard tasks",                  level: 2, unlocked: false },
-  { id: "challenger-3",    emoji: "⚔️", label: "Challenger III",  desc: "Complete 200 hard tasks",                 level: 3, unlocked: false },
-  { id: "elite-1",         emoji: "💎", label: "Elite I",         desc: "Complete 5 very hard tasks",              level: 1, unlocked: false },
-  { id: "elite-2",         emoji: "💎", label: "Elite II",        desc: "Complete 25 very hard tasks",             level: 2, unlocked: false },
-  { id: "elite-3",         emoji: "💎", label: "Elite III",       desc: "Complete 100 very hard tasks",            level: 3, unlocked: false },
-  { id: "perfectionist-1", emoji: "🏆", label: "Perfectionist I", desc: "5 tasks closed without reopen",           level: 1, unlocked: false },
-  { id: "perfectionist-2", emoji: "🏆", label: "Perfectionist II",desc: "20 tasks closed without reopen",          level: 2, unlocked: false },
-  { id: "perfectionist-3", emoji: "🏆", label: "Perfectionist III",desc:"50 tasks closed without reopen",          level: 3, unlocked: false },
-  { id: "cleanworker-1",   emoji: "📋", label: "Clean Worker I",  desc: "10 tasks with full desc + attachments",   level: 1, unlocked: false },
-  { id: "cleanworker-2",   emoji: "📋", label: "Clean Worker II", desc: "50 tasks with full desc + attachments",   level: 2, unlocked: false },
-  { id: "cleanworker-3",   emoji: "📋", label: "Clean Worker III",desc: "150 tasks with full desc + attachments",  level: 3, unlocked: false },
-  { id: "consistency-1",   emoji: "📅", label: "Consistency I",   desc: "3-day task streak",                       level: 1, unlocked: false },
-  { id: "consistency-2",   emoji: "📅", label: "Consistency II",  desc: "7-day task streak",                       level: 2, unlocked: false },
-  { id: "consistency-3",   emoji: "📅", label: "Consistency III", desc: "11-day task streak",                      level: 3, unlocked: false },
-  { id: "unstoppable-1",   emoji: "🚀", label: "Unstoppable I",   desc: "50 active days",                          level: 1, unlocked: false },
-  { id: "unstoppable-2",   emoji: "🚀", label: "Unstoppable II",  desc: "100 active days",                         level: 2, unlocked: false },
-  { id: "unstoppable-3",   emoji: "🚀", label: "Unstoppable III", desc: "200 active days",                         level: 3, unlocked: false },
-  { id: "onfire-1",        emoji: "🔥", label: "On Fire I",       desc: "Reach 3 streaks",                         level: 1, unlocked: false },
-  { id: "onfire-2",        emoji: "🔥", label: "On Fire II",      desc: "Reach 7 streaks",                         level: 2, unlocked: false },
-  { id: "onfire-3",        emoji: "🔥", label: "On Fire III",     desc: "Reach 30 streaks",                        level: 3, unlocked: false },
-  { id: "teamplayer-1",    emoji: "🤝", label: "Team Player I",   desc: "Assign tasks to 5 users",                 level: 1, unlocked: false },
-  { id: "teamplayer-2",    emoji: "🤝", label: "Team Player II",  desc: "Assign tasks to 15 users",                level: 2, unlocked: false },
-  { id: "teamplayer-3",    emoji: "🤝", label: "Team Player III", desc: "Assign tasks to 50 users",                level: 3, unlocked: false },
-  { id: "reviewer-1",      emoji: "🔍", label: "Reviewer I",      desc: "Review 10 tasks",                         level: 1, unlocked: false },
-  { id: "reviewer-2",      emoji: "🔍", label: "Reviewer II",     desc: "Review 50 tasks",                         level: 2, unlocked: false },
-  { id: "reviewer-3",      emoji: "🔍", label: "Reviewer III",    desc: "Review 150 tasks",                        level: 3, unlocked: false },
-  { id: "communicator-1",  emoji: "💬", label: "Communicator I",  desc: "Send 50 meaningful messages",             level: 1, unlocked: false },
-  { id: "communicator-2",  emoji: "💬", label: "Communicator II", desc: "Send 200 meaningful messages",            level: 2, unlocked: false },
-  { id: "communicator-3",  emoji: "💬", label: "Communicator III",desc: "Send 1000 meaningful messages",           level: 3, unlocked: false },
-  { id: "pollmaster-1",    emoji: "📊", label: "Poll Master I",   desc: "Create 10 polls",                         level: 1, unlocked: false },
-  { id: "pollmaster-2",    emoji: "📊", label: "Poll Master II",  desc: "Create 100 polls",                        level: 2, unlocked: false },
-  { id: "pollmaster-3",    emoji: "📊", label: "Poll Master III", desc: "Create 1000 polls",                       level: 3, unlocked: false },
-  { id: "influencer-1",    emoji: "📣", label: "Influencer I",    desc: "Get 50 replies",                          level: 1, unlocked: false },
-  { id: "influencer-2",    emoji: "📣", label: "Influencer II",   desc: "Get 300 replies",                         level: 2, unlocked: false },
-  { id: "influencer-3",    emoji: "📣", label: "Influencer III",  desc: "Get 1000 replies",                        level: 3, unlocked: false },
-  { id: "voicepioneer-1",  emoji: "🎙️", label: "Voice Pioneer I", desc: "Send 20 voice messages",                 level: 1, unlocked: false },
-  { id: "voicepioneer-2",  emoji: "🎙️", label: "Voice Pioneer II",desc: "Send 100 voice messages",                level: 2, unlocked: false },
-  { id: "voicepioneer-3",  emoji: "🎙️", label: "Voice Pioneer III",desc:"Send 1000 voice messages",               level: 3, unlocked: false },
-  { id: "broadcaster-1",   emoji: "🎬", label: "Broadcaster I",   desc: "Send 20 video messages",                  level: 1, unlocked: false },
-  { id: "broadcaster-2",   emoji: "🎬", label: "Broadcaster II",  desc: "Send 100 video messages",                 level: 2, unlocked: false },
-  { id: "broadcaster-3",   emoji: "🎬", label: "Broadcaster III", desc: "Send 1000 video messages",                level: 3, unlocked: false },
-  { id: "legend",          emoji: "👑", label: "Legend",          desc: "Reach 10 achievements at level III",      level: 3, unlocked: false },
-  { id: "master",          emoji: "🌟", label: "Master",          desc: "Reach 25 achievements total",             level: 3, unlocked: false },
-  { id: "grandmaster",     emoji: "⭐", label: "Grandmaster",     desc: "Reach 50 achievements total",             level: 3, unlocked: false },
+const ACHIEVEMENT_GROUPS: { key: AchievementGroup; label: string }[] = [
+  { key: "tasks",    label: "Tasks"    },
+  { key: "activity", label: "Activity" },
+  { key: "social",   label: "Social"   },
+  { key: "content",  label: "Content"  },
+  { key: "prestige", label: "Prestige" },
 ];
+
+const achievementList: Achievement[] = [
+  { id: "closer",        emoji: "🎯", label: "Closer",        group: "tasks",    levels: ["10 tasks completed",                  "50 tasks completed",                  "200 tasks completed"              ], currentLevel: 0 },
+  { id: "finisher",      emoji: "✅", label: "Finisher",      group: "tasks",    levels: ["5 tasks done before deadline",         "20 tasks done before deadline",       "50 tasks done before deadline"    ], currentLevel: 1 },
+  { id: "challenger",    emoji: "⚔️", label: "Challenger",    group: "tasks",    levels: ["10 hard tasks",                        "50 hard tasks",                       "200 hard tasks"                   ], currentLevel: 2 },
+  { id: "elite",         emoji: "💎", label: "Elite",         group: "tasks",    levels: ["5 very hard tasks",                    "25 very hard tasks",                  "100 very hard tasks"              ], currentLevel: 1 },
+  { id: "perfectionist", emoji: "🏆", label: "Perfectionist", group: "tasks",    levels: ["5 tasks without reopen",               "20 tasks without reopen",             "50 tasks without reopen"          ], currentLevel: 3 },
+  { id: "cleanworker",   emoji: "📋", label: "Clean Worker",  group: "tasks",    levels: ["10 tasks with full desc + files",      "50 tasks with full desc + files",     "150 tasks with full desc + files" ], currentLevel: 3 },
+  { id: "consistency",   emoji: "📅", label: "Consistency",   group: "activity", levels: ["3-day streak",                         "7-day streak",                        "11-day streak"                    ], currentLevel: 1 },
+  { id: "unstoppable",   emoji: "🚀", label: "Unstoppable",   group: "activity", levels: ["50 active days",                       "100 active days",                     "200 active days"                  ], currentLevel: 1 },
+  { id: "onfire",        emoji: "🔥", label: "On Fire",       group: "activity", levels: ["3 streaks total",                      "7 streaks total",                     "30 streaks total"                 ], currentLevel: 2 },
+  { id: "teamplayer",    emoji: "🤝", label: "Team Player",   group: "social",   levels: ["Assign tasks to 5 users",              "Assign tasks to 15 users",            "Assign tasks to 50 users"         ], currentLevel: 0 },
+  { id: "reviewer",      emoji: "🔍", label: "Reviewer",      group: "social",   levels: ["Review 10 tasks",                      "Review 50 tasks",                     "Review 150 tasks"                 ], currentLevel: 0 },
+  { id: "communicator",  emoji: "💬", label: "Communicator",  group: "social",   levels: ["50 messages sent",                     "200 messages sent",                   "1000 messages sent"               ], currentLevel: 0 },
+  { id: "pollmaster",    emoji: "📊", label: "Poll Master",   group: "content",  levels: ["10 polls created",                     "100 polls created",                   "1000 polls created"               ], currentLevel: 0 },
+  { id: "influencer",    emoji: "📣", label: "Influencer",    group: "content",  levels: ["50 replies received",                  "300 replies received",                "1000 replies received"            ], currentLevel: 0 },
+  { id: "voicepioneer",  emoji: "🎙️", label: "Voice Pioneer", group: "content",  levels: ["20 voice messages",                    "100 voice messages",                  "1000 voice messages"              ], currentLevel: 0 },
+  { id: "broadcaster",   emoji: "🎬", label: "Broadcaster",   group: "content",  levels: ["20 video messages",                    "100 video messages",                  "1000 video messages"              ], currentLevel: 0 },
+  { id: "legend",        emoji: "👑", label: "Legend",        group: "prestige", levels: ["10 level III achievements",            "10 level III achievements",           "10 level III achievements"        ], currentLevel: 0 },
+  { id: "master",        emoji: "🌟", label: "Master",        group: "prestige", levels: ["25 achievements total",                "25 achievements total",               "25 achievements total"            ], currentLevel: 0 },
+  { id: "grandmaster",   emoji: "⭐", label: "Grandmaster",   group: "prestige", levels: ["50 achievements total",                "50 achievements total",               "50 achievements total"            ], currentLevel: 0 },
+];
+
+const LEVEL_STYLES = {
+  0: { border: "", badge: "", badgeText: "" },
+  1: { border: "border-l-2 border-amber-600/60",  badge: "bg-amber-50  dark:bg-amber-900/20  text-amber-700  dark:text-amber-400",  badgeText: "I"   },
+  2: { border: "border-l-2 border-slate-400/70",  badge: "bg-slate-100 dark:bg-slate-700/40  text-slate-500  dark:text-slate-300",  badgeText: "II"  },
+  3: { border: "border-l-2 border-yellow-400",    badge: "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400", badgeText: "III" },
+} as const;
 
 const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -123,7 +108,7 @@ export function Profile() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [achievementTab, setAchievementTab] = useState<1 | 2 | 3>(1);
+  const [achievementTab, setAchievementTab] = useState<AchievementGroup>("tasks");
 
   const today = new Date();
   const currentYear = today.getFullYear();
@@ -557,54 +542,53 @@ export function Profile() {
                 <Trophy className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                 <h3 className="text-[12px] text-zinc-600 dark:text-zinc-400">Achievements</h3>
                 <span className="ml-auto text-[11px] text-zinc-400 dark:text-zinc-600">
-                  {achievementCategories.filter((a) => a.unlocked).length}/{achievementCategories.length}
+                  {achievementList.filter((a) => a.currentLevel > 0).length}/{achievementList.length}
                 </span>
               </div>
-              {/* Level tabs */}
-              <div className="flex gap-1 mb-3">
-                {([1, 2, 3] as const).map((lvl) => {
-                  const labels = { 1: "Level I", 2: "Level II", 3: "Level III" };
-                  const count = achievementCategories.filter((a) => a.level === lvl && a.unlocked).length;
-                  const total = achievementCategories.filter((a) => a.level === lvl).length;
-                  return (
-                    <button
-                      key={lvl}
-                      onClick={() => setAchievementTab(lvl)}
-                      className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${
-                        achievementTab === lvl
-                          ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
-                          : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                      }`}
-                    >
-                      {labels[lvl]}
-                      <span className="ml-1 opacity-60">{count}/{total}</span>
-                    </button>
-                  );
-                })}
+              {/* Group tabs */}
+              <div className="flex gap-1 mb-3 flex-wrap">
+                {ACHIEVEMENT_GROUPS.map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => setAchievementTab(key)}
+                    className={`text-[10px] px-2.5 py-1 rounded transition-colors ${
+                      achievementTab === key
+                        ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
+                        : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
               <div className="space-y-2">
-                {achievementCategories
-                  .filter((a) => a.level === achievementTab)
-                  .sort((a, b) => Number(b.unlocked) - Number(a.unlocked))
-                  .map((a) => (
-                    <div
-                      key={a.id}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${
-                        a.unlocked ? "bg-zinc-50 dark:bg-zinc-800/60" : "opacity-40"
-                      }`}
-                    >
-                      <span className={`text-[18px] leading-none ${a.unlocked ? "" : "grayscale"}`}>{a.emoji}</span>
-                      <div className="min-w-0">
-                        <p className="text-[12px] text-zinc-800 dark:text-zinc-200 leading-tight">{a.label}</p>
-                        <p className="text-[10px] text-zinc-500 dark:text-zinc-500 mt-0.5 leading-tight truncate">{a.desc}</p>
+                {achievementList
+                  .filter((a) => a.group === achievementTab)
+                  .sort((a, b) => b.currentLevel - a.currentLevel)
+                  .map((a) => {
+                    const lvl = a.currentLevel;
+                    const style = LEVEL_STYLES[lvl];
+                    const desc = lvl > 0 ? a.levels[lvl - 1] : a.levels[0];
+                    return (
+                      <div
+                        key={a.id}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${style.border} ${
+                          lvl > 0 ? "bg-zinc-50 dark:bg-zinc-800/60" : "opacity-40"
+                        }`}
+                      >
+                        <span className={`text-[18px] leading-none ${lvl > 0 ? "" : "grayscale"}`}>{a.emoji}</span>
+                        <div className="min-w-0">
+                          <p className="text-[12px] text-zinc-800 dark:text-zinc-200 leading-tight">{a.label}</p>
+                          <p className="text-[10px] text-zinc-500 mt-0.5 leading-tight truncate">{desc}</p>
+                        </div>
+                        {lvl > 0 && (
+                          <span className={`ml-auto shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${style.badge}`}>
+                            {style.badgeText}
+                          </span>
+                        )}
                       </div>
-                      {a.unlocked && (
-                        <span className="ml-auto shrink-0 text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-medium">
-                          done
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             </div>
           </div>
