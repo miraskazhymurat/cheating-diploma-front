@@ -25,4 +25,8 @@ export const statusApi = {
   reorder: async (statuses: { board_status_id: number; position: number }[]): Promise<void> => {
     await axiosInstance.patch("/statuses/reorder", { statuses });
   },
+
+  setDefault: async (boardStatusId: number): Promise<void> => {
+    await axiosInstance.patch(`/statuses/${boardStatusId}/set-default`);
+  },
 };

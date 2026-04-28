@@ -41,6 +41,16 @@ export function useUpdateStatus(boardId: number) {
   });
 }
 
+export function useSetDefaultStatus(boardId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (boardStatusId: number) => statusApi.setDefault(boardStatusId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["statuses", boardId] });
+    },
+  });
+}
+
 export function useReorderStatuses(boardId: number) {
   const queryClient = useQueryClient();
   return useMutation({

@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from "react-router";
 import { toast } from "sonner";
-import { Settings, ArrowLeft, UserPlus, X, Search, Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { Settings, ArrowLeft, UserPlus, X, Search, Plus, Trash2, ChevronUp, ChevronDown, Star } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 function StatusColorPicker({ initialColor, onSave }: { initialColor: string; onSave: (color: string) => void }) {
@@ -36,7 +36,7 @@ import { useAuth } from "../context/AuthContext";
 import { useBoard, useDeleteBoard } from "../../hooks/useBoards";
 import { useAllEmployees, useBoardEmployees, useDeleteMember} from "../../hooks/useEmployee";
 import { useSendInvite } from "../../hooks/useInvites";
-import { useBoardStatuses, useCreateStatus, useDeleteStatus, useReorderStatuses, useUpdateStatus } from "../../hooks/useStatuses";
+import { useBoardStatuses, useCreateStatus, useDeleteStatus, useReorderStatuses, useSetDefaultStatus, useUpdateStatus } from "../../hooks/useStatuses";
 
 export function BoardSettings() {
   const { boardId: boardIdParam } = useParams();
@@ -59,6 +59,7 @@ export function BoardSettings() {
   const deleteStatus = useDeleteStatus(boardId);
   const reorderStatuses = useReorderStatuses(boardId);
   const updateStatus = useUpdateStatus(boardId);
+  const setDefaultStatus = useSetDefaultStatus(boardId);
   const { data: boardMembers } = useBoardEmployees(boardId);
   const deleteMember = useDeleteMember(boardId);
   const { data: employees } = useAllEmployees();
@@ -180,6 +181,16 @@ export function BoardSettings() {
                   </div>
                   <div className="flex items-center gap-1">
                     <button
+                      onClick={() => setDefaultStatus.mutate(status.board_status_id)}
+                      disabled={!!status.is_default || setDefaultStatus.isPending}
+                      title={status.is_default ? "Default status" : "Set as default"}
+                      className="p-1 transition-colors disabled:cursor-default"
+                    >
+                      <Star
+                        className={`w-3.5 h-3.5 ${status.is_default ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground hover:text-yellow-400"}`}
+                      />
+                    </button>
+                    <button
                       disabled={idx === 0}
                       onClick={() => {
                         const reordered = [...statuses];
@@ -253,10 +264,12 @@ export function BoardSettings() {
                   className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                      <span className="text-[11px] text-muted-foreground">
-                        {member.full_name.charAt(0)}
-                      </span>
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                      {member.photo ? (
+                        <img src={member.photo} alt={member.full_name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">{member.full_name.charAt(0)}</span>
+                      )}
                     </div>
                     <div>
                       <div className="text-[13px] text-foreground">{member.full_name}</div>
@@ -358,10 +371,12 @@ export function BoardSettings() {
                           className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-muted/50 transition-colors"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
-                              <span className="text-[10px] text-muted-foreground">
-                                {user.full_name.charAt(0)}
-                              </span>
+                            <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                              {user.photo ? (
+                                <img src={user.photo} alt={user.full_name} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-[10px] text-muted-foreground">{user.full_name.charAt(0)}</span>
+                              )}
                             </div>
                             <div>
                               <div className="text-[12px] text-foreground">{user.full_name}</div>

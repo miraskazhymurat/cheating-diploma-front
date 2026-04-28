@@ -73,6 +73,7 @@ export interface BoardStatusResponse {
   code: string;
   position: number;
   colour?: string;
+  is_default?: boolean;
 }
 
 export interface InviteResponse {
