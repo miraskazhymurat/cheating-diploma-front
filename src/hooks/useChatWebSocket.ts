@@ -18,8 +18,11 @@ export function useChatWebSocket(boardId: number) {
             ["chat", boardId],
             (old) => {
               if (!old) return old;
-              const firstPage = [message, ...old.pages[0]];
-              return { ...old, pages: [firstPage, ...old.pages.slice(1)] };
+              const alreadyExists = old.pages.some((page) =>
+                page.some((m) => m.id === message.id)
+              );
+              if (alreadyExists) return old;
+              return { ...old, pages: [[message, ...old.pages[0]], ...old.pages.slice(1)] };
             }
           );
           break;
@@ -41,7 +44,8 @@ export function useChatWebSocket(boardId: number) {
         }
 
         case "update_poll": {
-          const updatedPoll = data as { id: number; question: string; options: ChatMessage["poll"] };
+          type PollPayload = NonNullable<ChatMessage["poll"]>;
+          const updatedPoll = data as PollPayload;
           queryClient.setQueryData<InfiniteData<ChatMessage[]>>(
             ["chat", boardId],
             (old) => {
@@ -50,8 +54,8 @@ export function useChatWebSocket(boardId: number) {
                 ...old,
                 pages: old.pages.map((page) =>
                   page.map((msg) =>
-                    msg.poll && msg.poll.id === (updatedPoll as any).id
-                      ? { ...msg, poll: updatedPoll as any }
+                    msg.poll?.id === updatedPoll.id
+                      ? { ...msg, poll: updatedPoll }
                       : msg
                   )
                 ),

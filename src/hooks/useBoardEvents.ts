@@ -13,9 +13,11 @@ export function useBoardEvents(boardId: number) {
       switch (type) {
         case "task_created": {
           const task = data as TaskResponse;
-          queryClient.setQueryData<TaskResponse[]>(["tasks", boardId], (old) =>
-            old ? [...old, task] : [task]
-          );
+          queryClient.setQueryData<TaskResponse[]>(["tasks", boardId], (old) => {
+            if (!old) return [task];
+            if (old.some((t) => t.id === task.id)) return old;
+            return [...old, task];
+          });
           break;
         }
 
