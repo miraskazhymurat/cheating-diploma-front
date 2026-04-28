@@ -5,7 +5,7 @@ import { AIInsights } from "../components/AIInsights";
 import { Leaderboard } from "../components/Leaderboard";
 import { CreateTaskModal } from "../components/CreateTaskModal";
 import { BoardChat } from "../components/BoardChat";
-import { insights } from "../data/mockData";
+import { burnoutAlerts, promotionCandidates } from "../data/mockData";
 import { LayoutList, LayoutGrid, Settings, ChevronDown, Plus, Sparkles, Users, SlidersHorizontal, X, Video } from "lucide-react";
 import { useRef, useState } from "react";
 import { useParams, Link } from "react-router";
@@ -311,7 +311,7 @@ export function Dashboard() {
               </div>
 
               {sidebarTab === "ai" ? (
-                <AIInsights insights={insights} />
+                <AIInsights burnoutAlerts={burnoutAlerts} promotionCandidates={promotionCandidates} />
               ) : (
                 <div className="space-y-8">
                   <div>
@@ -320,7 +320,7 @@ export function Dashboard() {
                   </div>
                   <div>
                     <h2 className="text-[13px] text-zinc-500 dark:text-zinc-400 mb-4 px-3">Leaderboard</h2>
-                    <Leaderboard employees={boardMembers} />
+                    <Leaderboard employees={employees} currentUserId={user?.id} />
                   </div>
                 </div>
               )}
@@ -366,7 +366,7 @@ export function Dashboard() {
               </div>
 
               {sidebarTab === "ai" ? (
-                <AIInsights insights={insights} />
+                <AIInsights burnoutAlerts={burnoutAlerts} promotionCandidates={promotionCandidates} />
               ) : (
                 <div className="space-y-8">
                   <div>
@@ -375,7 +375,7 @@ export function Dashboard() {
                   </div>
                   <div>
                     <h2 className="text-[13px] text-zinc-500 dark:text-zinc-400 mb-4 px-3">Leaderboard</h2>
-                    <Leaderboard employees={boardMembers} />
+                    <Leaderboard employees={employees} currentUserId={user?.id} />
                   </div>
                 </div>
               )}

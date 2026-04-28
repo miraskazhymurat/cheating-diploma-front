@@ -13,6 +13,10 @@ export function useChatMessages(boardId: number) {
   });
 }
 
+// Mutations invalidate the query as a fallback for when the WebSocket is
+// disconnected. useChatWebSocket deduplicates incoming WS events against the
+// cache, so a simultaneous invalidation + WS event won't produce duplicates.
+
 export function useSendMessage(boardId: number) {
   const queryClient = useQueryClient();
   return useMutation({
