@@ -5,7 +5,7 @@ import { AIInsights } from "../components/AIInsights";
 import { Leaderboard } from "../components/Leaderboard";
 import { CreateTaskModal } from "../components/CreateTaskModal";
 import { BoardChat } from "../components/BoardChat";
-import { burnoutAlerts, promotionCandidates } from "../data/mockData";
+import { deriveAIInsights } from "../utils/aiInsightsFromBoard";
 import { LayoutList, LayoutGrid, Settings, ChevronDown, Plus, Sparkles, Users, SlidersHorizontal, X, Video } from "lucide-react";
 import { useRef, useState } from "react";
 import { useParams, Link, useLocation } from "react-router";
@@ -85,6 +85,7 @@ export function Dashboard() {
   }
 
   const uiTasks = rawTasks.map((t) => taskResponseToUI(t, employees));
+  const { burnoutAlerts, promotionCandidates } = deriveAIInsights(employees, uiTasks);
 
   const filteredTasks = uiTasks.filter((task) =>
     activeFilters.every((f) => {
