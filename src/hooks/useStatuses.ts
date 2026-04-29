@@ -51,6 +51,26 @@ export function useSetDefaultStatus(boardId: number) {
   });
 }
 
+export function useSetCompletedStatus(boardId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (boardStatusId: number) => statusApi.setCompleted(boardStatusId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["statuses", boardId] });
+    },
+  });
+}
+
+export function useSetReopenStatus(boardId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (boardStatusId: number) => statusApi.setReopen(boardStatusId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["statuses", boardId] });
+    },
+  });
+}
+
 export function useReorderStatuses(boardId: number) {
   const queryClient = useQueryClient();
   return useMutation({

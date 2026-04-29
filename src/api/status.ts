@@ -29,4 +29,12 @@ export const statusApi = {
   setDefault: async (boardStatusId: number): Promise<void> => {
     await axiosInstance.patch(`/statuses/${boardStatusId}/set-default`);
   },
+
+  setCompleted: async (boardStatusId: number): Promise<void> => {
+    await axiosInstance.patch(`/statuses/${boardStatusId}/set-completed`);
+  },
+
+  setReopen: async (boardStatusId: number): Promise<void> => {
+    await axiosInstance.patch(`/statuses/${boardStatusId}/set-reopen`);
+  },
 };

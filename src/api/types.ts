@@ -74,6 +74,8 @@ export interface BoardStatusResponse {
   position: number;
   colour?: string;
   is_default?: boolean;
+  is_completed?: boolean;
+  is_reopen?: boolean;
 }
 
 export interface InviteResponse {

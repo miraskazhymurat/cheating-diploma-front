@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from "react-router";
 import { toast } from "sonner";
-import { Settings, ArrowLeft, UserPlus, X, Search, Plus, Trash2, ChevronUp, ChevronDown, CircleDot } from "lucide-react";
+import { Settings, ArrowLeft, UserPlus, X, Search, Plus, Trash2, ChevronUp, ChevronDown, CircleDot, CheckCircle2, RotateCcw } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 function StatusColorPicker({ initialColor, onSave }: { initialColor: string; onSave: (color: string) => void }) {
@@ -36,7 +36,7 @@ import { useAuth } from "../context/AuthContext";
 import { useBoard, useDeleteBoard, useUpdateBoard } from "../../hooks/useBoards";
 import { useAllEmployees, useBoardEmployees, useDeleteMember} from "../../hooks/useEmployee";
 import { useSendInvite } from "../../hooks/useInvites";
-import { useBoardStatuses, useCreateStatus, useDeleteStatus, useReorderStatuses, useSetDefaultStatus, useUpdateStatus } from "../../hooks/useStatuses";
+import { useBoardStatuses, useCreateStatus, useDeleteStatus, useReorderStatuses, useSetCompletedStatus, useSetDefaultStatus, useSetReopenStatus, useUpdateStatus } from "../../hooks/useStatuses";
 
 export function BoardSettings() {
   const { boardId: boardIdParam } = useParams();
@@ -72,6 +72,8 @@ export function BoardSettings() {
   const reorderStatuses = useReorderStatuses(boardId);
   const updateStatus = useUpdateStatus(boardId);
   const setDefaultStatus = useSetDefaultStatus(boardId);
+  const setCompletedStatus = useSetCompletedStatus(boardId);
+  const setReopenStatus = useSetReopenStatus(boardId);
   const { data: boardMembers } = useBoardEmployees(boardId);
   const deleteMember = useDeleteMember(boardId);
   const { data: employees } = useAllEmployees();
@@ -224,11 +226,31 @@ export function BoardSettings() {
                     <button
                       onClick={() => setDefaultStatus.mutate(status.board_status_id)}
                       disabled={!!status.is_default || setDefaultStatus.isPending}
-                      title={status.is_default ? "Default status" : "Set as default"}
+                      title={status.is_default ? "Default status (new tasks start here)" : "Set as default status"}
                       className="p-1 transition-colors disabled:cursor-default"
                     >
                       <CircleDot
                         className={`w-3.5 h-3.5 ${status.is_default ? "text-blue-500" : "text-muted-foreground hover:text-blue-500"}`}
+                      />
+                    </button>
+                    <button
+                      onClick={() => setCompletedStatus.mutate(status.board_status_id)}
+                      disabled={!!status.is_completed || setCompletedStatus.isPending}
+                      title={status.is_completed ? "Completed status (tasks marked done)" : "Set as completed status"}
+                      className="p-1 transition-colors disabled:cursor-default"
+                    >
+                      <CheckCircle2
+                        className={`w-3.5 h-3.5 ${status.is_completed ? "text-green-500" : "text-muted-foreground hover:text-green-500"}`}
+                      />
+                    </button>
+                    <button
+                      onClick={() => setReopenStatus.mutate(status.board_status_id)}
+                      disabled={!!status.is_reopen || setReopenStatus.isPending}
+                      title={status.is_reopen ? "Reopen status (tasks moved here when reopened)" : "Set as reopen status"}
+                      className="p-1 transition-colors disabled:cursor-default"
+                    >
+                      <RotateCcw
+                        className={`w-3.5 h-3.5 ${status.is_reopen ? "text-orange-500" : "text-muted-foreground hover:text-orange-500"}`}
                       />
                     </button>
                     <button
