@@ -543,6 +543,11 @@ function MessageBubble({
 export function BoardChat({ boardId, boardName, memberCount, defaultOpen = false }: BoardChatProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [unread, setUnread] = useState(0);
+
+  type OptimisticAttachment = { type: "image" | "audio" | "video" | "file"; name: string; url: string; mime: string; size?: number };
+  type OptimisticPoll = { question: string; options: string[] };
+  type OptimisticMsg = { tempId: string; text: string; createdAt: string; replyTo: ChatReplyTo | null; attachments?: OptimisticAttachment[]; poll?: OptimisticPoll };
+  const [optimisticMsgs, setOptimisticMsgs] = useState<OptimisticMsg[]>([]);
   const [input, setInput] = useState("");
   const [replyTo, setReplyTo] = useState<ChatReplyTo | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -711,14 +716,37 @@ export function BoardChat({ boardId, boardName, memberCount, defaultOpen = false
   const handleSend = () => {
     const trimmed = input.trim();
     if ((!trimmed && pendingFiles.length === 0) || sendMessage.isPending) return;
-    sendMessage.mutate({
-      text: trimmed,
-      reply_to_id: replyTo?.id,
-      files: pendingFiles.length > 0 ? pendingFiles : undefined,
+
+    const tempId = `temp-${Date.now()}`;
+    const blobUrls: string[] = [];
+    const optimisticAttachments: OptimisticAttachment[] = pendingFiles.map((f) => {
+      const url = URL.createObjectURL(f);
+      blobUrls.push(url);
+      const mime = f.type || "";
+      if (mime.startsWith("image/")) return { type: "image" as const, name: f.name, url, mime, size: f.size };
+      if (isAudio(mime, f.name)) return { type: "audio" as const, name: f.name, url, mime, size: f.size };
+      if (isVideo(mime)) return { type: "video" as const, name: f.name, url, mime, size: f.size };
+      return { type: "file" as const, name: f.name, url, mime, size: f.size };
     });
+
+    setOptimisticMsgs((prev) => [...prev, {
+      tempId, text: trimmed, createdAt: new Date().toISOString(), replyTo,
+      attachments: optimisticAttachments.length > 0 ? optimisticAttachments : undefined,
+    }]);
+
     setInput("");
     setReplyTo(null);
     setPendingFiles([]);
+
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 0);
+
+    sendMessage.mutate(
+      { text: trimmed, reply_to_id: replyTo?.id, files: pendingFiles.length > 0 ? pendingFiles : undefined },
+      { onSettled: () => {
+        setOptimisticMsgs((prev) => prev.filter((m) => m.tempId !== tempId));
+        blobUrls.forEach((u) => URL.revokeObjectURL(u));
+      }}
+    );
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -736,6 +764,12 @@ export function BoardChat({ boardId, boardName, memberCount, defaultOpen = false
   const handleCreatePoll = () => {
     const validOptions = pollOptions.map((o) => o.trim()).filter(Boolean);
     if (!pollQuestion.trim() || validOptions.length < 2) return;
+    const tempId = `temp-${Date.now()}`;
+    setOptimisticMsgs((prev) => [...prev, {
+      tempId, text: "", createdAt: new Date().toISOString(), replyTo: null,
+      poll: { question: pollQuestion.trim(), options: validOptions },
+    }]);
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 0);
     createPoll.mutate(
       { question: pollQuestion.trim(), options: validOptions },
       {
@@ -744,6 +778,7 @@ export function BoardChat({ boardId, boardName, memberCount, defaultOpen = false
           setPollQuestion("");
           setPollOptions(["", ""]);
         },
+        onSettled: () => setOptimisticMsgs((prev) => prev.filter((m) => m.tempId !== tempId)),
       }
     );
   };
@@ -777,14 +812,28 @@ export function BoardChat({ boardId, boardName, memberCount, defaultOpen = false
   const stopRecording = (send: boolean) => {
     const mr = mediaRecorderRef.current;
     if (!mr) return;
+    const tempId = `temp-${Date.now()}`;
+    const capturedReplyTo = replyTo;
     mr.onstop = () => {
       if (send && chunksRef.current.length > 0) {
         const mimeType = mr.mimeType || "audio/webm";
         const blob = new Blob(chunksRef.current, { type: mimeType });
         const ext = mimeType.includes("ogg") ? "ogg" : mimeType.includes("mp4") ? "m4a" : "webm";
-        const file = new File([blob], `voice-message.${ext}`, { type: mimeType });
-        sendMessage.mutate({ text: "", reply_to_id: replyTo?.id, files: [file] });
-        if (send) setReplyTo(null);
+        const fileName = `voice-message.${ext}`;
+        const file = new File([blob], fileName, { type: mimeType });
+        const blobUrl = URL.createObjectURL(blob);
+        setOptimisticMsgs((prev) => [...prev, {
+          tempId, text: "", createdAt: new Date().toISOString(), replyTo: capturedReplyTo,
+          attachments: [{ type: "audio" as const, name: fileName, url: blobUrl, mime: mimeType }],
+        }]);
+        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 0);
+        sendMessage.mutate({ text: "", reply_to_id: capturedReplyTo?.id, files: [file] }, {
+          onSettled: () => {
+            setOptimisticMsgs((prev) => prev.filter((m) => m.tempId !== tempId));
+            URL.revokeObjectURL(blobUrl);
+          },
+        });
+        setReplyTo(null);
       }
       mr.stream.getTracks().forEach((t) => t.stop());
     };
@@ -824,14 +873,28 @@ export function BoardChat({ boardId, boardName, memberCount, defaultOpen = false
   const stopVideoRecording = (send: boolean) => {
     const mr = videoMrRef.current;
     if (!mr) return;
+    const tempId = `temp-${Date.now()}`;
+    const capturedReplyTo = replyTo;
     mr.onstop = () => {
       if (send && videoChunksRef.current.length > 0) {
         const mimeType = mr.mimeType || "video/webm";
         const ext = mimeType.includes("mp4") ? "mp4" : "webm";
         const blob = new Blob(videoChunksRef.current, { type: mimeType });
-        const file = new File([blob], `video-message.${ext}`, { type: mimeType });
-        sendMessage.mutate({ text: "", reply_to_id: replyTo?.id, files: [file] });
-        if (send) setReplyTo(null);
+        const fileName = `video-message.${ext}`;
+        const file = new File([blob], fileName, { type: mimeType });
+        const blobUrl = URL.createObjectURL(blob);
+        setOptimisticMsgs((prev) => [...prev, {
+          tempId, text: "", createdAt: new Date().toISOString(), replyTo: capturedReplyTo,
+          attachments: [{ type: "video" as const, name: fileName, url: blobUrl, mime: mimeType }],
+        }]);
+        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 0);
+        sendMessage.mutate({ text: "", reply_to_id: capturedReplyTo?.id, files: [file] }, {
+          onSettled: () => {
+            setOptimisticMsgs((prev) => prev.filter((m) => m.tempId !== tempId));
+            URL.revokeObjectURL(blobUrl);
+          },
+        });
+        setReplyTo(null);
       }
       mr.stream.getTracks().forEach((t) => t.stop());
       videoStreamRef.current = null;
@@ -934,6 +997,65 @@ export function BoardChat({ boardId, boardName, memberCount, defaultOpen = false
                 boardId={boardId}
                 currentEmployeeId={currentEmployee?.id}
               />
+            );
+          })}
+          {optimisticMsgs.map((om) => {
+            const atts = om.attachments ?? [];
+            const bareAtts = atts.filter((a) => a.type === "image" || a.type === "audio" || a.type === "video");
+            const fileAtts = atts.filter((a) => a.type === "file");
+            const hasBubble = !!om.text || !!om.replyTo || fileAtts.length > 0;
+            return (
+              <div key={om.tempId} className="flex gap-2 flex-row-reverse opacity-60">
+                <div className="shrink-0 w-7 h-7" />
+                <div className="flex flex-col max-w-[75%] items-end gap-1">
+                  {hasBubble && (
+                    <div className="px-3 py-2 rounded-2xl rounded-tr-sm bg-zinc-900 dark:bg-zinc-100 text-zinc-100 dark:text-zinc-900 text-[13px] leading-relaxed break-words">
+                      {om.replyTo && (
+                        <div className="mb-2 px-2 py-1 rounded-lg border-l-2 border-zinc-600 dark:border-zinc-400 bg-zinc-800 dark:bg-zinc-200/60 text-left">
+                          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mb-0.5">{om.replyTo.author.full_name}</p>
+                          <p className="text-[11px] text-zinc-400 dark:text-zinc-600 line-clamp-2">{om.replyTo.text}</p>
+                        </div>
+                      )}
+                      {om.text}
+                      {fileAtts.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {fileAtts.map((att, i) => (
+                            <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] bg-zinc-800 dark:bg-zinc-200 text-zinc-300 dark:text-zinc-700">
+                              <FileText className="w-3 h-3 shrink-0" />
+                              <span className="truncate max-w-[140px]">{att.name}</span>
+                              {att.size !== undefined && <span className="shrink-0 opacity-60">{formatFileSize(att.size)}</span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {om.poll && (
+                    <div className="px-3 py-2.5 rounded-2xl min-w-[200px] max-w-[260px] bg-zinc-900 dark:bg-zinc-100">
+                      <div className="flex items-start gap-1.5 mb-3">
+                        <BarChart2 className="w-3.5 h-3.5 mt-0.5 shrink-0 text-zinc-400 dark:text-zinc-500" />
+                        <p className="text-[13px] font-medium leading-snug text-zinc-100 dark:text-zinc-900">{om.poll.question}</p>
+                      </div>
+                      <div className="space-y-1.5">
+                        {om.poll.options.map((opt, i) => (
+                          <div key={i} className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-800 dark:bg-zinc-200 text-[12px] text-zinc-100 dark:text-zinc-900">{opt}</div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {bareAtts.map((att, i) => {
+                    if (att.type === "image") return <img key={i} src={att.url} alt={att.name} className="max-w-[220px] rounded-xl" />;
+                    if (att.type === "audio") return <AudioPlayer key={i} src={att.url} isOwn={true} />;
+                    if (att.type === "video") {
+                      return att.name.startsWith("video-message")
+                        ? <CircularVideoPlayer key={i} src={att.url} />
+                        : <video key={i} src={att.url} controls className="rounded-xl" style={{ maxWidth: 220, maxHeight: 160 }} />;
+                    }
+                    return null;
+                  })}
+                  <span className="text-[10px] text-zinc-300 dark:text-zinc-600 px-1">Sending…</span>
+                </div>
+              </div>
             );
           })}
           <div ref={bottomRef} />
