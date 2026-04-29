@@ -33,7 +33,7 @@ function StatusColorPicker({ initialColor, onSave }: { initialColor: string; onS
 }
 import { Badge } from "../components/ui/badge";
 import { useAuth } from "../context/AuthContext";
-import { useBoard, useDeleteBoard } from "../../hooks/useBoards";
+import { useBoard, useDeleteBoard, useUpdateBoard } from "../../hooks/useBoards";
 import { useAllEmployees, useBoardEmployees, useDeleteMember} from "../../hooks/useEmployee";
 import { useSendInvite } from "../../hooks/useInvites";
 import { useBoardStatuses, useCreateStatus, useDeleteStatus, useReorderStatuses, useSetDefaultStatus, useUpdateStatus } from "../../hooks/useStatuses";
@@ -48,6 +48,18 @@ export function BoardSettings() {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data: board } = useBoard(boardId);
+  const updateBoard = useUpdateBoard(boardId);
+  const [boardName, setBoardName] = useState("");
+  const [boardDescription, setBoardDescription] = useState("");
+
+  // Sync local state when board data loads
+  useEffect(() => {
+    if (board) {
+      setBoardName(board.name ?? "");
+      setBoardDescription(board.description ?? "");
+    }
+  }, [board?.id]);
+
   const [inviteEmail, setInviteEmail] = useState("");
   const [invites, setInvites] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -139,14 +151,27 @@ export function BoardSettings() {
 
       <div className="space-y-8">
           {/* Board Info */}
-          <div className="p-6 rounded-lg bg-card border border-border">
+          <form
+            className="p-6 rounded-lg bg-card border border-border"
+            onSubmit={(e) => {
+              e.preventDefault();
+              updateBoard.mutate(
+                { name: boardName.trim(), description: boardDescription.trim() },
+                {
+                  onSuccess: () => toast.success("Board updated"),
+                  onError: () => toast.error("Failed to update board"),
+                }
+              );
+            }}
+          >
             <h2 className="text-[13px] text-foreground/70 mb-4">Board Information</h2>
             <div className="space-y-3">
               <div>
                 <label className="text-[11px] text-muted-foreground block mb-1">Board Name</label>
                 <input
                   type="text"
-                  defaultValue={board.name}
+                  value={boardName}
+                  onChange={(e) => setBoardName(e.target.value)}
                   disabled={!isOwner}
                   className="w-full px-3 py-2 text-[13px] bg-muted/50 border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-ring/70 focus:border-ring/70 text-foreground disabled:opacity-50"
                 />
@@ -154,14 +179,30 @@ export function BoardSettings() {
               <div>
                 <label className="text-[11px] text-muted-foreground block mb-1">Description</label>
                 <textarea
-                  defaultValue={board.description}
+                  value={boardDescription}
+                  onChange={(e) => setBoardDescription(e.target.value)}
                   disabled={!isOwner}
                   rows={3}
                   className="w-full px-3 py-2 text-[13px] bg-muted/50 border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-ring/70 focus:border-ring/70 text-foreground disabled:opacity-50 resize-none"
                 />
               </div>
+              {isOwner && (
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    disabled={
+                      updateBoard.isPending ||
+                      !boardName.trim() ||
+                      (boardName.trim() === board.name && boardDescription.trim() === (board.description ?? ""))
+                    }
+                    className="text-[12px] px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-zinc-100 dark:text-zinc-900 rounded-md hover:bg-zinc-700 dark:hover:bg-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {updateBoard.isPending ? "Saving…" : "Save changes"}
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
+          </form>
 
           {/* Statuses */}
           <div className="p-6 rounded-lg bg-card border border-border">

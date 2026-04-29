@@ -56,6 +56,17 @@ export function useBoardMemberStats(boardId: number) {
   });
 }
 
+export function useUpdateBoard(id: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { name: string; description: string }) => boardApi.update(id, payload),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["board", id], updated);
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
 export function useDeleteBoard() {
   const queryClient = useQueryClient();
   return useMutation({
