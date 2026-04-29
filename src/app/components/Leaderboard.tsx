@@ -2,6 +2,7 @@ import { Flame, Star } from "lucide-react";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import type { EmployeeResponse } from "../../api/types";
+import { useBoardMemberStats } from "../../hooks/useBoards";
 
 // ── Level config ──────────────────────────────────────────────────────────────
 
@@ -69,10 +70,6 @@ interface GEntry {
   pts30d: number;
   totalPts: number;
   streak: number;
-  hardTasks: number;
-  polls: number;
-  messages: number;
-  completedTasks: number;
 }
 
 function buildEntries(employees: EmployeeResponse[]): GEntry[] {
@@ -81,20 +78,27 @@ function buildEntries(employees: EmployeeResponse[]): GEntry[] {
       const s = emp.user_id;
       return {
         emp,
-        pts30d:        Math.round(150 + pseudoRand(s, 10) * 1050),
-        totalPts:      Math.round(200 + pseudoRand(s, 11) * 2800),
-        streak:        Math.round(pseudoRand(s, 12) * 21),
-        hardTasks:     Math.round(pseudoRand(s, 13) * 40),
-        polls:         Math.round(pseudoRand(s, 14) * 80),
-        messages:      Math.round(pseudoRand(s, 15) * 300),
-        completedTasks:Math.round(pseudoRand(s, 16) * 120),
+        pts30d:   Math.round(150 + pseudoRand(s, 10) * 1050),
+        totalPts: Math.round(200 + pseudoRand(s, 11) * 2800),
+        streak:   Math.round(pseudoRand(s, 12) * 21),
       };
     })
     .sort((a, b) => b.pts30d - a.pts30d);
 }
 
-function computeBoardLabels(entries: GEntry[]): Map<number, BoardLabelId[]> {
-  const statKeys: { id: BoardLabelId; key: keyof GEntry }[] = [
+interface MemberStatMap {
+  hardTasks: number;
+  polls: number;
+  messages: number;
+  completedTasks: number;
+}
+
+function computeBoardLabels(
+  employees: EmployeeResponse[],
+  statsById: Map<number, MemberStatMap>,
+): Map<number, BoardLabelId[]> {
+  if (statsById.size === 0) return new Map();
+  const statKeys: { id: BoardLabelId; key: keyof MemberStatMap }[] = [
     { id: "challenger",   key: "hardTasks"      },
     { id: "pollmaster",   key: "polls"          },
     { id: "communicator", key: "messages"       },
@@ -102,9 +106,13 @@ function computeBoardLabels(entries: GEntry[]): Map<number, BoardLabelId[]> {
   ];
   const map = new Map<number, BoardLabelId[]>();
   for (const { id, key } of statKeys) {
-    const winner = entries.reduce((best, e) => (e[key] as number) > (best[key] as number) ? e : best);
-    const prev = map.get(winner.emp.user_id) ?? [];
-    map.set(winner.emp.user_id, [...prev, id]);
+    const max = Math.max(...employees.map((e) => statsById.get(e.user_id)?.[key] ?? 0));
+    if (max === 0) continue;
+    for (const emp of employees) {
+      if ((statsById.get(emp.user_id)?.[key] ?? 0) === max) {
+        map.set(emp.user_id, [...(map.get(emp.user_id) ?? []), id]);
+      }
+    }
   }
   return map;
 }
@@ -132,14 +140,30 @@ const RANK_MEDAL = ["🥇", "🥈", "🥉"];
 interface LeaderboardProps {
   employees: EmployeeResponse[];
   currentUserId?: number;
+  boardId: number;
 }
 
-export function Leaderboard({ employees, currentUserId }: LeaderboardProps) {
+export function Leaderboard({ employees, currentUserId, boardId }: LeaderboardProps) {
   const [showRules, setShowRules] = useState(false);
   const [openTooltip, setOpenTooltip] = useState<string | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const entries = useMemo(() => buildEntries(employees), [employees]);
-  const boardLabels = useMemo(() => computeBoardLabels(entries), [entries]);
+
+  const { data: memberStats = [] } = useBoardMemberStats(boardId);
+  const statsById = useMemo(() => {
+    const map = new Map<number, MemberStatMap>();
+    for (const s of memberStats) {
+      map.set(s.user_id, {
+        hardTasks:     s.hard_tasks,
+        polls:         s.polls_created,
+        messages:      s.messages_sent,
+        completedTasks: s.completed_tasks,
+      });
+    }
+    return map;
+  }, [memberStats]);
+
+  const boardLabels = useMemo(() => computeBoardLabels(employees, statsById), [employees, statsById]);
 
   useEffect(() => {
     if (!openTooltip) return;

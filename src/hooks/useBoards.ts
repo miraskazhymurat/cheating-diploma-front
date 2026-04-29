@@ -48,6 +48,14 @@ export function useImportNotionV2() {
   });
 }
 
+export function useBoardMemberStats(boardId: number) {
+  return useQuery({
+    queryKey: ["board", boardId, "member-stats"],
+    queryFn: () => boardApi.getMemberStats(boardId),
+    enabled: boardId > 0,
+  });
+}
+
 export function useDeleteBoard() {
   const queryClient = useQueryClient();
   return useMutation({

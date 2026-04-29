@@ -6,6 +6,14 @@ export interface NotionImportRequest {
   token: string;
 }
 
+export interface MemberStat {
+  user_id: number;
+  hard_tasks: number;
+  completed_tasks: number;
+  polls_created: number;
+  messages_sent: number;
+}
+
 export const boardApi = {
   getDashboard: async (): Promise<DashboardResponse> => {
     const { data } = await axiosInstance.get<DashboardResponse>("/dashboard");
@@ -39,6 +47,11 @@ export const boardApi = {
       database_id: payload.database_id,
       token: payload.token,
     });
+    return data;
+  },
+
+  getMemberStats: async (boardId: number): Promise<MemberStat[]> => {
+    const { data } = await axiosInstance.get<MemberStat[]>(`/boards/${boardId}/member-stats`);
     return data;
   },
 };

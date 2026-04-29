@@ -321,7 +321,7 @@ export function Dashboard() {
                 <div className="space-y-8">
                   <div>
                     <h2 className="text-[13px] text-zinc-500 dark:text-zinc-400 mb-4 px-3">Leaderboard</h2>
-                    <Leaderboard employees={employees} currentUserId={user?.id} />
+                    <Leaderboard employees={employees} currentUserId={user?.id} boardId={boardId} />
                   </div>
                 </div>
               )}
@@ -372,7 +372,7 @@ export function Dashboard() {
                 <div className="space-y-8">
                   <div>
                     <h2 className="text-[13px] text-zinc-500 dark:text-zinc-400 mb-4 px-3">Leaderboard</h2>
-                    <Leaderboard employees={employees} currentUserId={user?.id} />
+                    <Leaderboard employees={employees} currentUserId={user?.id} boardId={boardId} />
                   </div>
                 </div>
               )}
