@@ -143,13 +143,28 @@ function CircularVideoPlayer({ src }: { src: string }) {
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const circumference = 2 * Math.PI * 87;
   const progress = duration > 0 ? (current / duration) * 100 : 0;
+
+  // Fetch the video as a blob so Chrome on Mac doesn't use range requests on
+  // MediaRecorder WebM files (which have no seek table and fail range requests).
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    fetch(src)
+      .then((r) => r.blob())
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob);
+        setBlobUrl(objectUrl);
+      })
+      .catch(() => setBlobUrl(src));
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [src]);
 
   const toggle = () => {
     const el = videoRef.current;
     if (!el) return;
-    playing ? el.pause() : el.play();
+    if (playing) { el.pause(); } else { el.play().catch(() => {}); }
   };
 
   return (
@@ -166,11 +181,17 @@ function CircularVideoPlayer({ src }: { src: string }) {
         />
       </svg>
       <div className="absolute inset-2 rounded-full overflow-hidden bg-zinc-900">
+        {!blobUrl && (
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="w-4 h-4 rounded-full border-2 border-zinc-500 border-t-transparent animate-spin" />
+          </div>
+        )}
         <video
           ref={videoRef}
-          src={src}
+          src={blobUrl ?? undefined}
           className="w-full h-full object-cover"
           playsInline
+          preload="auto"
           onTimeUpdate={() => setCurrent(videoRef.current?.currentTime ?? 0)}
           onLoadedMetadata={() => setDuration(videoRef.current?.duration ?? 0)}
           onPlay={() => setPlaying(true)}
@@ -371,6 +392,27 @@ function PollDisplay({
   );
 }
 
+function BlobVideo({ src }: { src: string }) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    fetch(src)
+      .then((r) => r.blob())
+      .then((blob) => { objectUrl = URL.createObjectURL(blob); setBlobUrl(objectUrl); })
+      .catch(() => setBlobUrl(src));
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [src]);
+  return (
+    <video
+      src={blobUrl ?? undefined}
+      controls
+      preload="auto"
+      className="rounded-xl"
+      style={{ maxWidth: 220, maxHeight: 160 }}
+    />
+  );
+}
+
 function MessageBubble({
   msg,
   isOwn,
@@ -505,7 +547,7 @@ function MessageBubble({
               }
               return att.file_name.startsWith("video-message")
                 ? <CircularVideoPlayer key={att.id} src={att.url} />
-                : <video key={att.id} src={att.url} controls className="rounded-xl" style={{ maxWidth: 220, maxHeight: 160 }} />;
+                : <BlobVideo key={att.id} src={att.url} />;
             })}
           </div>
 
