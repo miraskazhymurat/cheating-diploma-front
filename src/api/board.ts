@@ -54,4 +54,9 @@ export const boardApi = {
     const { data } = await axiosInstance.get<MemberStat[]>(`/boards/${boardId}/member-stats`);
     return data;
   },
+
+  update: async (id: number, payload: { name: string; description: string }): Promise<BoardResponse> => {
+    const { data } = await axiosInstance.patch<BoardResponse>(`/boards/${id}`, payload);
+    return data;
+  },
 };
