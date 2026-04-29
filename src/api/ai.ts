@@ -102,3 +102,18 @@ export async function fetchPromotionCandidates(boardId: number): Promise<Promoti
   const res = await aiClient.get<PromotionResponse>(`/ai/promotion-candidates/${boardId}`);
   return res.data;
 }
+
+export interface TimeEstimateResponse {
+  task_id: number;
+  task_title: string;
+  estimated_hours: number;
+  estimated_label: string;
+  explanation: string;
+  confidence: "high" | "medium" | "low";
+  source: "claude" | "algorithmic";
+}
+
+export async function fetchTimeEstimate(taskId: number): Promise<TimeEstimateResponse> {
+  const res = await aiClient.post<TimeEstimateResponse>("/ai/estimate-time", { task_id: taskId });
+  return res.data;
+}

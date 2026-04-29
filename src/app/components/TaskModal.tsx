@@ -1,6 +1,7 @@
 import { X, Clock, Trash2, Paperclip, Pencil, Sparkles, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { type UITask, type BoardStatusResponse, type EmployeeResponse, type TimeEstimateResponse } from "../../api/types";
+import { type UITask, type BoardStatusResponse, type EmployeeResponse } from "../../api/types";
+import { type TimeEstimateResponse, fetchTimeEstimate } from "../../api/ai";
 import { Badge } from "./ui/badge";
 import { useEffect, useRef, useState } from "react";
 import { useUpdateTask, useDeleteAttachment, useUploadAttachment, useDeleteTask } from "../../hooks/useTasks";
@@ -296,25 +297,18 @@ export function TaskModal({ task, isOpen, onClose, boardId, statuses = [] }: Tas
     });
   };
 
-  const handleEstimate = () => {
+  const handleEstimate = async () => {
     setIsEstimating(true);
     setEstimateError(false);
-    const ESTIMATES: Array<{ estimated_hours: number; estimated_label: string; explanation: string }> = [
-      { estimated_hours: 1,  estimated_label: "Quick fix",   explanation: "Task is well-scoped with clear acceptance criteria. Low complexity, no external dependencies." },
-      { estimated_hours: 2,  estimated_label: "~2 hours",    explanation: "Straightforward implementation. May require minor research or a small refactor." },
-      { estimated_hours: 4,  estimated_label: "Half day",    explanation: "Moderate complexity. Likely involves touching 2–3 files and writing tests." },
-      { estimated_hours: 6,  estimated_label: "~6 hours",    explanation: "Non-trivial task. Expect some back-and-forth with stakeholders or design review." },
-      { estimated_hours: 8,  estimated_label: "Full day",    explanation: "Substantial work. Involves integration with an external system or significant logic." },
-      { estimated_hours: 12, estimated_label: "1.5 days",    explanation: "Complex task spanning multiple layers. Plan for testing and potential blockers." },
-      { estimated_hours: 16, estimated_label: "2 days",      explanation: "Large scope. Consider breaking into smaller subtasks for cleaner progress tracking." },
-      { estimated_hours: 24, estimated_label: "3 days",      explanation: "High complexity. Requires careful planning, likely touching critical paths." },
-    ];
-    setTimeout(() => {
-      const pick = ESTIMATES[Math.floor(Math.random() * ESTIMATES.length)];
-      setAiEstimate(pick);
-      saveEstimate(task.backendId, pick);
+    try {
+      const result = await fetchTimeEstimate(task.backendId);
+      setAiEstimate(result);
+      saveEstimate(task.backendId, result);
+    } catch {
+      setEstimateError(true);
+    } finally {
       setIsEstimating(false);
-    }, 1200 + Math.random() * 800);
+    }
   };
 
   const handleAddComment = () => {
