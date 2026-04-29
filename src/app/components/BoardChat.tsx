@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
 import { MessageCircle, X, Send, Users, Reply, Paperclip, FileText, Play, Pause, Music, Mic, Trash2, Video, ChevronsDown, BarChart2, Plus, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import { useChatMessages, useSendMessage, useDeleteMessage, useCreatePoll, useVotePoll, useUnvotePoll } from "../../hooks/useChat";
+import { useChatWebSocket } from "../../hooks/useChatWebSocket";
 import { useAuth } from "../context/AuthContext";
 import { useMe } from "../../hooks/useEmployee";
 import type { ChatMessage, ChatReplyTo } from "../../api/chat";
@@ -541,6 +542,7 @@ function MessageBubble({
 
 export function BoardChat({ boardId, boardName, memberCount, defaultOpen = false }: BoardChatProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [unread, setUnread] = useState(0);
   const [input, setInput] = useState("");
   const [replyTo, setReplyTo] = useState<ChatReplyTo | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -635,14 +637,25 @@ export function BoardChat({ boardId, boardName, memberCount, defaultOpen = false
   const deleteMessage = useDeleteMessage(boardId);
   const createPoll = useCreatePoll(boardId);
 
+  const isOpenRef = useRef(isOpen);
+  isOpenRef.current = isOpen;
+  useChatWebSocket(boardId, {
+    onNewMessage: (msg) => {
+      if (!isOpenRef.current && msg.author.id !== currentEmployee?.id) {
+        setUnread((n) => n + 1);
+      }
+    },
+  });
+
   const messages = data?.pages.flatMap((page) => page) ?? [];
   const prevScrollHeightRef = useRef<number>(0);
 
-  // Scroll to bottom when chat opens
+  // Scroll to bottom + clear unread when chat opens
   const prevIsOpenRef = useRef(false);
   useEffect(() => {
     if (isOpen && !prevIsOpenRef.current) {
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "instant" }), 0);
+      setUnread(0);
     }
     prevIsOpenRef.current = isOpen;
   }, [isOpen]);
@@ -847,6 +860,11 @@ export function BoardChat({ boardId, boardName, memberCount, defaultOpen = false
         title="Board chat"
       >
         {isOpen ? <X className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
+        {!isOpen && unread > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
+            {unread > 99 ? "99+" : unread}
+          </span>
+        )}
       </button>
 
       <div

@@ -3,7 +3,11 @@ import type { InfiniteData } from "@tanstack/react-query";
 import { useWebSocket, type WsEvent } from "./useWebSocket";
 import type { ChatMessage } from "../api/chat";
 
-export function useChatWebSocket(boardId: number) {
+interface ChatWebSocketOptions {
+  onNewMessage?: (msg: ChatMessage) => void;
+}
+
+export function useChatWebSocket(boardId: number, options?: ChatWebSocketOptions) {
   const queryClient = useQueryClient();
 
   useWebSocket(`/boards/${boardId}/ws`, {
@@ -14,6 +18,7 @@ export function useChatWebSocket(boardId: number) {
       switch (type) {
         case "new_message": {
           const message = data as ChatMessage;
+          options?.onNewMessage?.(message);
           queryClient.setQueryData<InfiniteData<ChatMessage[]>>(
             ["chat", boardId],
             (old) => {
