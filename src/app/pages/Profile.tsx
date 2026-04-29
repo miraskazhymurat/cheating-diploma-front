@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Activity, Camera, ChevronLeft, ChevronRight, Lock, Trophy, User } from "lucide-react";
 import { useParams, useLocation, useNavigate } from "react-router";
 import { ArrowLeft, MessageCircle } from "lucide-react";
-import { useMe, useUpdateEmployee, useEmployeeActivities, useEmployeeProfile } from "../../hooks/useEmployee";
+import { useMe, useUpdateEmployee, useEmployeeActivities, useEmployeeProfile, useEmployeeAchievements } from "../../hooks/useEmployee";
 import { useAuth } from "../context/AuthContext";
 
 const getActivityColor = (level: number) => {
@@ -102,6 +102,13 @@ export function Profile() {
   const isLoading = isOwnProfile ? meQuery.isLoading : otherQuery.isLoading;
   const isError = isOwnProfile ? meQuery.isError : otherQuery.isError;
   const activityData = isOwnProfile ? meActivityQuery.data : otherQuery.data?.activities;
+
+  const achievementEmployeeId = viewingId ?? meQuery.data?.id ?? 0;
+  const { data: achievementsData } = useEmployeeAchievements(achievementEmployeeId);
+  const mergedAchievements = achievementList.map((a) => {
+    const entry = achievementsData?.find((e) => e.achievement_code === a.id);
+    return { ...a, currentLevel: (entry?.level ?? 0) as Achievement["currentLevel"] };
+  });
 
   const photoInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -542,7 +549,7 @@ export function Profile() {
                 <Trophy className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                 <h3 className="text-[12px] text-zinc-600 dark:text-zinc-400">Achievements</h3>
                 <span className="ml-auto text-[11px] text-zinc-400 dark:text-zinc-600">
-                  {achievementList.filter((a) => a.currentLevel > 0).length}/{achievementList.length}
+                  {mergedAchievements.filter((a) => a.currentLevel > 0).length}/{mergedAchievements.length}
                 </span>
               </div>
 
@@ -558,7 +565,7 @@ export function Profile() {
                         : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
                     }`}
                   >
-                    {f === "unlocked" ? `Unlocked (${achievementList.filter((a) => a.currentLevel > 0).length})` : "All"}
+                    {f === "unlocked" ? `Unlocked (${mergedAchievements.filter((a) => a.currentLevel > 0).length})` : "All"}
                   </button>
                 ))}
               </div>
@@ -569,13 +576,13 @@ export function Profile() {
                   className="h-[380px] overflow-y-auto space-y-2 pr-0.5"
                   style={{ scrollbarWidth: "thin", scrollbarColor: "rgb(161 161 170) transparent" }}
                 >
-                  {achievementList.filter((a) => a.currentLevel > 0).length === 0 ? (
+                  {mergedAchievements.filter((a) => a.currentLevel > 0).length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center gap-2 text-zinc-400 dark:text-zinc-600">
                       <Trophy className="w-6 h-6 opacity-40" />
                       <p className="text-[11px]">No achievements yet</p>
                     </div>
                   ) : (
-                    achievementList
+                    mergedAchievements
                       .filter((a) => a.currentLevel > 0)
                       .sort((a, b) => b.currentLevel - a.currentLevel)
                       .map((a) => {
@@ -639,7 +646,7 @@ export function Profile() {
                   );
                 }}
               >
-                {achievementList
+                {mergedAchievements
                   .filter((a) => a.group === ACHIEVEMENT_GROUPS[achievementPage].key)
                   .sort((a, b) => b.currentLevel - a.currentLevel)
                   .map((a) => {

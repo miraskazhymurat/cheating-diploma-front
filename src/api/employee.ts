@@ -51,4 +51,9 @@ export const employeeApi = {
     const data = (res as any).data ?? res;
     return data;
   },
+
+  getAchievements: async (id: number): Promise<{ achievement_code: string; level: number }[]> => {
+    const res = await axiosInstance.get(`/employees/${id}/achievements`);
+    return (res as any).data ?? res;
+  },
 };

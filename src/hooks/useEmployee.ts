@@ -58,6 +58,14 @@ export function useEmployeeProfile(id: number) {
   });
 }
 
+export function useEmployeeAchievements(id: number) {
+  return useQuery({
+    queryKey: ["employee", id, "achievements"],
+    queryFn: () => employeeApi.getAchievements(id),
+    enabled: id > 0,
+  });
+}
+
 export function useDeleteMember(boardId: number) {
   const queryClient = useQueryClient();
   return useMutation({
