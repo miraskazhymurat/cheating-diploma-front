@@ -19,7 +19,7 @@ export function deriveAIInsights(
   }
 
   const stats = employees.map((emp) => {
-    const mine = tasks.filter((t) => t.assigneeId === emp.id);
+    const mine = tasks.filter((t) => t.assigneeId === emp.user_id);
     const inProgress = mine.filter((t) => t.status === "in-progress").length;
     const done = mine.filter((t) => t.status === "done").length;
     const total = mine.length;
@@ -65,7 +65,7 @@ export function deriveAIInsights(
       }
 
       return {
-        id: String(emp.id),
+        id: String(emp.user_id),
         employeeId: String(emp.user_id),
         employeeName: emp.full_name,
         riskLevel,
@@ -88,14 +88,14 @@ export function deriveAIInsights(
       const completionRate = total > 0 ? (done / total) * 100 : 0;
       const impactRate = highPriority > 0 ? (highDone / highPriority) * 100 : completionRate;
 
-      const performance = clamp(Math.round(completionRate + pseudoRand(emp.id * 3, 10)), 40, 100);
-      const delivery = clamp(Math.round(completionRate + pseudoRand(emp.id * 7, 12) - 3), 40, 100);
-      const collaboration = clamp(Math.round(60 + pseudoRand(emp.id * 11, 30)), 40, 100);
-      const impact = clamp(Math.round(impactRate + pseudoRand(emp.id * 5, 10) - 2), 40, 100);
+      const performance = clamp(Math.round(completionRate + pseudoRand(emp.user_id * 3, 10)), 40, 100);
+      const delivery = clamp(Math.round(completionRate + pseudoRand(emp.user_id * 7, 12) - 3), 40, 100);
+      const collaboration = clamp(Math.round(60 + pseudoRand(emp.user_id * 11, 30)), 40, 100);
+      const impact = clamp(Math.round(impactRate + pseudoRand(emp.user_id * 5, 10) - 2), 40, 100);
       const total_score = Math.round((performance + delivery + collaboration + impact) / 4);
 
       return {
-        id: String(emp.id),
+        id: String(emp.user_id),
         employeeId: String(emp.user_id),
         employeeName: emp.full_name,
         scores: { performance, delivery, collaboration, impact },
