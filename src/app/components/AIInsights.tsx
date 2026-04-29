@@ -1,10 +1,13 @@
-import { Flame, TrendingUp, ChevronRight } from "lucide-react";
+import { Flame, TrendingUp, ChevronRight, Loader } from "lucide-react";
 import { Link } from "react-router";
-import { BurnoutAlert, PromotionCandidate, RiskLevel } from "../data/mockData";
+import type { BurnoutAlert, PromotionCandidate } from "../../api/ai";
+
+type RiskLevel = "low" | "medium" | "high" | "critical";
 
 interface AIInsightsProps {
   burnoutAlerts: BurnoutAlert[];
   promotionCandidates: PromotionCandidate[];
+  isLoading?: boolean;
 }
 
 const RISK_CONFIG: Record<RiskLevel, { bar: string; badge: string; label: string }> = {
@@ -30,17 +33,23 @@ const RISK_CONFIG: Record<RiskLevel, { bar: string; badge: string; label: string
   },
 };
 
-const SCORE_META: Record<
-  keyof PromotionCandidate["scores"],
-  { label: string; bar: string }
-> = {
-  performance: { label: "Perf", bar: "bg-violet-400" },
-  delivery:    { label: "Delivery", bar: "bg-blue-400" },
-  collaboration: { label: "Collab", bar: "bg-emerald-400" },
-  impact:      { label: "Impact", bar: "bg-amber-400" },
+const SCORE_META: Record<keyof PromotionCandidate["scores"], { label: string; bar: string }> = {
+  performance:   { label: "Perf",     bar: "bg-violet-400" },
+  delivery:      { label: "Delivery", bar: "bg-blue-400" },
+  collaboration: { label: "Collab",   bar: "bg-emerald-400" },
+  impact:        { label: "Impact",   bar: "bg-amber-400" },
 };
 
-export function AIInsights({ burnoutAlerts, promotionCandidates }: AIInsightsProps) {
+export function AIInsights({ burnoutAlerts, promotionCandidates, isLoading }: AIInsightsProps) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12 text-zinc-400 gap-2">
+        <Loader className="w-4 h-4 animate-spin" />
+        <span className="text-[12px]">Analyzing team…</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* ── Burnout Risk ─────────────────────────────────────────────── */}
@@ -52,7 +61,7 @@ export function AIInsights({ burnoutAlerts, promotionCandidates }: AIInsightsPro
 
         <div className="space-y-2">
           {burnoutAlerts.map((alert) => {
-            const cfg = RISK_CONFIG[alert.riskLevel];
+            const cfg = RISK_CONFIG[alert.risk_level];
             return (
               <div
                 key={alert.id}
@@ -60,17 +69,18 @@ export function AIInsights({ burnoutAlerts, promotionCandidates }: AIInsightsPro
               >
                 <div className={`h-0.5 ${cfg.bar}`} />
                 <div className="px-3 py-2.5">
-                  {/* Name + badge */}
                   <div className="flex items-center justify-between mb-2">
-                    <Link to={`/profile/${alert.employeeId}`} className="text-[12px] font-medium text-zinc-900 dark:text-zinc-100 hover:underline">
-                      {alert.employeeName}
+                    <Link
+                      to={`/profile/${alert.employee_id}`}
+                      className="text-[12px] font-medium text-zinc-900 dark:text-zinc-100 hover:underline"
+                    >
+                      {alert.full_name}
                     </Link>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${cfg.badge}`}>
                       {cfg.label}
                     </span>
                   </div>
 
-                  {/* Signals */}
                   <div className="flex flex-wrap gap-1 mb-2">
                     {alert.signals.map((s) => (
                       <span
@@ -82,7 +92,6 @@ export function AIInsights({ burnoutAlerts, promotionCandidates }: AIInsightsPro
                     ))}
                   </div>
 
-                  {/* Interventions */}
                   <div className="border-t border-zinc-100 dark:border-zinc-800 pt-2 space-y-0.5">
                     {alert.interventions.map((text) => (
                       <p
@@ -114,17 +123,18 @@ export function AIInsights({ burnoutAlerts, promotionCandidates }: AIInsightsPro
               key={c.id}
               className="rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2.5"
             >
-              {/* Name + total */}
               <div className="flex items-center justify-between mb-2.5">
-                <Link to={`/profile/${c.employeeId}`} className="text-[12px] font-medium text-zinc-900 dark:text-zinc-100 hover:underline">
-                  {c.employeeName}
+                <Link
+                  to={`/profile/${c.employee_id}`}
+                  className="text-[12px] font-medium text-zinc-900 dark:text-zinc-100 hover:underline"
+                >
+                  {c.full_name}
                 </Link>
                 <span className="text-[12px] font-semibold text-violet-600 dark:text-violet-400">
                   {c.total}
                 </span>
               </div>
 
-              {/* Score bars */}
               <div className="space-y-1.5">
                 {(Object.keys(c.scores) as (keyof typeof c.scores)[]).map((key) => {
                   const { label, bar } = SCORE_META[key];

@@ -1,8 +1,10 @@
 import { X, ChevronDown, Sparkles, User, Paperclip } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useBoardEmployees } from "../../hooks/useEmployee";
 import { useCreateTask } from "../../hooks/useTasks";
 import type { EmployeeResponse } from "../../api/types";
+import { fetchBestAssignee, fetchBestTester } from "../../api/ai";
+import type { CandidateScore } from "../../api/ai";
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -25,21 +27,6 @@ const difficultyOptions = [
 
 // ── AI picker ────────────────────────────────────────────────────────────────
 
-function pseudoRand(seed: number, offset: number) {
-  const x = Math.sin(seed * 127.1 + offset * 311.7) * 43758.5453;
-  return x - Math.floor(x);
-}
-
-interface Candidate {
-  emp: EmployeeResponse;
-  skillMatch: number;
-  workload: number;
-  performance: number;
-  availability: number;
-  growth: number;
-  composite: number;
-}
-
 const SCAN_STEPS = [
   "Analyzing task requirements",
   "Checking team workload",
@@ -49,50 +36,61 @@ const SCAN_STEPS = [
 ];
 
 function AIAssigneePicker({
+  boardId,
+  taskTitle,
+  taskDescription,
+  priority,
+  difficulty,
   employees,
   onSelect,
   onCancel,
+  role,
 }: {
+  boardId: number;
+  taskTitle: string;
+  taskDescription: string;
+  priority: string;
+  difficulty: string;
   employees: EmployeeResponse[];
   onSelect: (emp: EmployeeResponse) => void;
   onCancel: () => void;
+  role: "assignee" | "tester";
 }) {
   const [completedSteps, setCompletedSteps] = useState(0);
-  const [phase, setPhase] = useState<"scanning" | "done">("scanning");
-
-  const candidates: Candidate[] = useMemo(() => {
-    return employees
-      .map((emp) => {
-        const s = emp.user_id;
-        const skillMatch   = 0.40 + pseudoRand(s, 1) * 0.55;
-        const workload     = 0.30 + pseudoRand(s, 2) * 0.60;
-        const performance  = 0.45 + pseudoRand(s, 3) * 0.50;
-        const availability = 0.50 + pseudoRand(s, 4) * 0.45;
-        const growth       = 0.25 + pseudoRand(s, 5) * 0.65;
-        const composite =
-          0.35 * skillMatch +
-          0.30 * workload +
-          0.20 * performance +
-          0.10 * availability +
-          0.05 * growth;
-        return { emp, skillMatch, workload, performance, availability, growth, composite };
-      })
-      .sort((a, b) => b.composite - a.composite);
-  }, [employees]);
+  const [phase, setPhase] = useState<"scanning" | "done" | "error">("scanning");
+  const [candidates, setCandidates] = useState<CandidateScore[]>([]);
 
   useEffect(() => {
     let step = 0;
-    const tick = () => {
+    const stepInterval = setInterval(() => {
       step += 1;
       setCompletedSteps(step);
-      if (step < SCAN_STEPS.length) {
-        setTimeout(tick, 620 + pseudoRand(step, 7) * 280);
-      } else {
-        setTimeout(() => setPhase("done"), 450);
-      }
-    };
-    setTimeout(tick, 350);
+      if (step >= SCAN_STEPS.length) clearInterval(stepInterval);
+    }, 600);
+
+    const apiFn = role === "tester" ? fetchBestTester : fetchBestAssignee;
+    apiFn({
+      board_id: boardId,
+      task_title: taskTitle || "New task",
+      task_description: taskDescription,
+      priority,
+      difficulty,
+    })
+      .then((res) => {
+        clearInterval(stepInterval);
+        setCompletedSteps(SCAN_STEPS.length);
+        setCandidates(res.candidates);
+        setTimeout(() => setPhase("done"), 300);
+      })
+      .catch(() => {
+        clearInterval(stepInterval);
+        setPhase("error");
+      });
+
+    return () => clearInterval(stepInterval);
   }, []);
+
+  const empByUserId = Object.fromEntries(employees.map((e) => [e.user_id, e]));
 
   const confidenceCfg = (score: number) =>
     score >= 0.75
@@ -105,35 +103,25 @@ function AIAssigneePicker({
 
   return (
     <div className="mt-2 rounded-lg border border-violet-200 dark:border-violet-900/50 bg-violet-50/40 dark:bg-violet-950/20 overflow-hidden">
-      {/* panel header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-violet-200 dark:border-violet-900/50">
         <div className="flex items-center gap-2">
           <Sparkles className={`w-3.5 h-3.5 text-violet-500 ${phase === "scanning" ? "animate-pulse" : ""}`} />
           <span className="text-[12px] font-medium text-violet-700 dark:text-violet-300">
-            {phase === "scanning" ? "AI is analyzing your team…" : "Analysis complete"}
+            {phase === "scanning" ? "AI is analyzing your team…" : phase === "error" ? "Analysis failed" : "Analysis complete"}
           </span>
         </div>
-        <button
-          onClick={onCancel}
-          className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors p-0.5"
-        >
+        <button onClick={onCancel} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors p-0.5">
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {phase === "scanning" ? (
-        /* ── scanning phase ── */
+      {phase === "scanning" && (
         <div className="px-4 py-4 space-y-2.5">
           {SCAN_STEPS.map((step, i) => {
             const done   = i < completedSteps;
             const active = i === completedSteps;
             return (
-              <div
-                key={i}
-                className={`flex items-center gap-2.5 transition-opacity duration-300 ${
-                  i > completedSteps ? "opacity-25" : "opacity-100"
-                }`}
-              >
+              <div key={i} className={`flex items-center gap-2.5 transition-opacity duration-300 ${i > completedSteps ? "opacity-25" : "opacity-100"}`}>
                 {done ? (
                   <div className="w-4 h-4 rounded-full bg-violet-500 flex items-center justify-center shrink-0">
                     <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 10 10">
@@ -145,70 +133,59 @@ function AIAssigneePicker({
                 ) : (
                   <div className="w-4 h-4 rounded-full border border-zinc-300 dark:border-zinc-700 shrink-0" />
                 )}
-                <span
-                  className={`text-[12px] ${
-                    done
-                      ? "text-zinc-700 dark:text-zinc-300"
-                      : active
-                      ? "text-violet-600 dark:text-violet-400"
-                      : "text-zinc-400 dark:text-zinc-600"
-                  }`}
-                >
-                  {step}
-                  {active && <span className="animate-pulse">…</span>}
+                <span className={`text-[12px] ${done ? "text-zinc-700 dark:text-zinc-300" : active ? "text-violet-600 dark:text-violet-400" : "text-zinc-400 dark:text-zinc-600"}`}>
+                  {step}{active && <span className="animate-pulse">…</span>}
                 </span>
               </div>
             );
           })}
         </div>
-      ) : (
-        /* ── results phase ── */
+      )}
+
+      {phase === "error" && (
+        <div className="px-4 py-4 text-[12px] text-zinc-500 dark:text-zinc-400">
+          Could not reach AI service. Please try again.
+        </div>
+      )}
+
+      {phase === "done" && (
         <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 max-h-80 overflow-y-auto">
-          {candidates.map((c, rank) => {
-            const conf = confidenceCfg(c.composite);
+          {candidates.map((c) => {
+            const emp = empByUserId[c.user_id];
+            const conf = confidenceCfg(c.composite_score);
             const subScores = [
-              { label: "Skill Match",  value: c.skillMatch,   weight: "35%" },
-              { label: "Workload",     value: c.workload,     weight: "30%" },
-              { label: "Performance",  value: c.performance,  weight: "20%" },
-              { label: "Availability", value: c.availability, weight: "10%" },
-              { label: "Growth",       value: c.growth,       weight: "5%"  },
+              { label: "Skill Match",  value: c.skill_match,        weight: "35%" },
+              { label: "Workload",     value: c.workload_score,     weight: "30%" },
+              { label: "Performance",  value: c.performance_score,  weight: "20%" },
+              { label: "Availability", value: c.availability_score, weight: "10%" },
+              { label: "Growth",       value: c.growth_score,       weight: "5%"  },
             ];
             return (
-              <div
-                key={c.emp.user_id}
-                className={`px-4 py-3 ${rank === 0 ? "bg-violet-50/70 dark:bg-violet-950/30" : ""}`}
-              >
-                {/* candidate header row */}
+              <div key={c.user_id} className={`px-4 py-3 ${c.rank === 1 ? "bg-violet-50/70 dark:bg-violet-950/30" : ""}`}>
                 <div className="flex items-center justify-between mb-2.5">
                   <div className="flex items-center gap-2 min-w-0">
-                    {rank === 0 && (
+                    {c.rank === 1 && (
                       <span className="text-[9px] uppercase tracking-wider font-semibold text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/50 border border-violet-200 dark:border-violet-800/50 px-1.5 py-0.5 rounded shrink-0">
                         Best match
                       </span>
                     )}
-                    {c.emp.photo ? (
-                      <img src={c.emp.photo} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
+                    {(c.photo || emp?.photo) ? (
+                      <img src={c.photo || emp?.photo} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
                     ) : (
                       <div className="w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-[9px] font-medium text-zinc-600 dark:text-zinc-300 shrink-0">
-                        {c.emp.full_name.charAt(0)}
+                        {c.full_name.charAt(0)}
                       </div>
                     )}
-                    <span className="text-[13px] font-medium text-zinc-800 dark:text-zinc-200 truncate">
-                      {c.emp.full_name}
-                    </span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium shrink-0 ${conf.cls}`}>
-                      {conf.label}
-                    </span>
+                    <span className="text-[13px] font-medium text-zinc-800 dark:text-zinc-200 truncate">{c.full_name}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium shrink-0 ${conf.cls}`}>{conf.label}</span>
                   </div>
-
                   <div className="flex items-center gap-2 shrink-0 ml-2">
-                    <span className="text-[14px] font-semibold text-zinc-700 dark:text-zinc-300 tabular-nums">
-                      {pct(c.composite)}
-                    </span>
+                    <span className="text-[14px] font-semibold text-zinc-700 dark:text-zinc-300 tabular-nums">{pct(c.composite_score)}</span>
                     <button
-                      onClick={() => onSelect(c.emp)}
+                      onClick={() => emp && onSelect(emp)}
+                      disabled={!emp}
                       className={`text-[11px] px-2.5 py-1 rounded transition-colors font-medium ${
-                        rank === 0
+                        c.rank === 1
                           ? "bg-violet-600 text-white hover:bg-violet-700"
                           : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
                       }`}
@@ -218,18 +195,18 @@ function AIAssigneePicker({
                   </div>
                 </div>
 
-                {/* sub-score bars */}
+                {c.reasoning && (
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mb-2 italic">{c.reasoning}</p>
+                )}
+
                 <div className="grid grid-cols-2 gap-x-5 gap-y-2">
                   {subScores.map((sub) => (
                     <div key={sub.label}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
-                          {sub.label}
-                          <span className="text-zinc-400 dark:text-zinc-600 ml-1">·{sub.weight}</span>
+                          {sub.label}<span className="text-zinc-400 dark:text-zinc-600 ml-1">·{sub.weight}</span>
                         </span>
-                        <span className="text-[10px] font-medium text-zinc-600 dark:text-zinc-400 tabular-nums">
-                          {pct(sub.value)}
-                        </span>
+                        <span className="text-[10px] font-medium text-zinc-600 dark:text-zinc-400 tabular-nums">{pct(sub.value)}</span>
                       </div>
                       <div className="h-1 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
                         <div
@@ -263,6 +240,7 @@ export function CreateTaskModal({
   const [testerId, setTesterId] = useState<number | null>(null);
   const [useAITester, setUseAITester] = useState(false);
   const [showAIPicker, setShowAIPicker] = useState(false);
+  const [showAITesterPicker, setShowAITesterPicker] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const [showTesterDropdown, setShowTesterDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
@@ -318,6 +296,7 @@ export function CreateTaskModal({
     setTesterId(null);
     setUseAITester(false);
     setShowAIPicker(false);
+    setShowAITesterPicker(false);
     setFiles([]);
   };
 
@@ -342,11 +321,20 @@ export function CreateTaskModal({
     if (id === "ai") {
       setUseAITester(true);
       setTesterId(null);
+      setShowTesterDropdown(false);
+      setShowAITesterPicker(true);
     } else {
       setUseAITester(false);
+      setShowAITesterPicker(false);
       setTesterId(id);
+      setShowTesterDropdown(false);
     }
-    setShowTesterDropdown(false);
+  };
+
+  const handleAITesterSelect = (emp: EmployeeResponse) => {
+    setTesterId(emp.user_id);
+    setUseAITester(false);
+    setShowAITesterPicker(false);
   };
 
   return (
@@ -471,9 +459,15 @@ export function CreateTaskModal({
                 {/* AI picker panel */}
                 {showAIPicker && (
                   <AIAssigneePicker
+                    boardId={boardId}
+                    taskTitle={title}
+                    taskDescription={description}
+                    priority={priorityOptions.find((p) => p.value === priorityId)?.label.toLowerCase() ?? "medium"}
+                    difficulty={difficultyOptions.find((d) => d.value === difficultyId)?.label.toLowerCase() ?? "medium"}
                     employees={employees}
                     onSelect={handleAISelect}
                     onCancel={() => setShowAIPicker(false)}
+                    role="assignee"
                   />
                 )}
               </div>
@@ -544,6 +538,20 @@ export function CreateTaskModal({
                     </div>
                   )}
                 </div>
+
+                {showAITesterPicker && (
+                  <AIAssigneePicker
+                    boardId={boardId}
+                    taskTitle={title}
+                    taskDescription={description}
+                    priority={priorityOptions.find((p) => p.value === priorityId)?.label.toLowerCase() ?? "medium"}
+                    difficulty={difficultyOptions.find((d) => d.value === difficultyId)?.label.toLowerCase() ?? "medium"}
+                    employees={employees}
+                    onSelect={handleAITesterSelect}
+                    onCancel={() => { setShowAITesterPicker(false); setUseAITester(false); }}
+                    role="tester"
+                  />
+                )}
               </div>
 
               {/* Priority + Difficulty row */}

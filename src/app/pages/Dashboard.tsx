@@ -5,6 +5,7 @@ import { AIInsights } from "../components/AIInsights";
 import { Leaderboard } from "../components/Leaderboard";
 import { CreateTaskModal } from "../components/CreateTaskModal";
 import { BoardChat } from "../components/BoardChat";
+import { useBurnoutAlerts, usePromotionCandidates } from "../../hooks/useAIInsights";
 import { deriveAIInsights } from "../utils/aiInsightsFromBoard";
 import { LayoutList, LayoutGrid, Settings, ChevronDown, Plus, Sparkles, Users, SlidersHorizontal, X, Video } from "lucide-react";
 import { useRef, useState } from "react";
@@ -58,6 +59,9 @@ export function Dashboard() {
   const { data: rawTasks = [], isLoading: tasksLoading } = useBoardTasks(boardId);
   const { data: employees = [] } = useBoardEmployees(boardId);
   const { data: statuses = [] } = useBoardStatuses(boardId);
+  const { data: burnoutData, isLoading: burnoutLoading } = useBurnoutAlerts(boardId);
+  const { data: promotionData, isLoading: promotionLoading } = usePromotionCandidates(boardId);
+  const aiInsightsLoading = burnoutLoading || promotionLoading;
 
   useBoardWebSocket(boardId);
 
@@ -317,7 +321,11 @@ export function Dashboard() {
               </div>
 
               {sidebarTab === "ai" ? (
-                <AIInsights burnoutAlerts={burnoutAlerts} promotionCandidates={promotionCandidates} />
+                <AIInsights
+                  burnoutAlerts={burnoutData?.alerts ?? []}
+                  promotionCandidates={promotionData?.candidates ?? []}
+                  isLoading={aiInsightsLoading}
+                />
               ) : (
                 <div className="space-y-8">
                   <div>
@@ -368,7 +376,11 @@ export function Dashboard() {
               </div>
 
               {sidebarTab === "ai" ? (
-                <AIInsights burnoutAlerts={burnoutAlerts} promotionCandidates={promotionCandidates} />
+                <AIInsights
+                  burnoutAlerts={burnoutData?.alerts ?? []}
+                  promotionCandidates={promotionData?.candidates ?? []}
+                  isLoading={aiInsightsLoading}
+                />
               ) : (
                 <div className="space-y-8">
                   <div>
