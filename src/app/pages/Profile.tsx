@@ -21,7 +21,7 @@ type Achievement = {
   label: string;
   group: AchievementGroup;
   levels: [string, string, string]; // desc for each level
-  currentLevel: 0 | 1 | 2 | 3;     // 0 = locked
+  currentLevel: 0 | 1 | 2 | 3 | 4;     // 0 = locked
 };
 
 const ACHIEVEMENT_GROUPS: { key: AchievementGroup; label: string }[] = [
@@ -49,17 +49,24 @@ const achievementList: Achievement[] = [
   { id: "influencer",    emoji: "📣", label: "Influencer",    group: "content",  levels: ["50 replies received",                  "300 replies received",                "1000 replies received"            ], currentLevel: 0 },
   { id: "voicepioneer",  emoji: "🎙️", label: "Voice Pioneer", group: "content",  levels: ["20 voice messages",                    "100 voice messages",                  "1000 voice messages"              ], currentLevel: 0 },
   { id: "broadcaster",   emoji: "🎬", label: "Broadcaster",   group: "content",  levels: ["20 video messages",                    "100 video messages",                  "1000 video messages"              ], currentLevel: 0 },
-  { id: "legend",        emoji: "👑", label: "Legend",        group: "prestige", levels: ["10 level III achievements",            "10 level III achievements",           "10 level III achievements"        ], currentLevel: 1 },
-  { id: "master",        emoji: "🌟", label: "Master",        group: "prestige", levels: ["25 achievements total",                "25 achievements total",               "25 achievements total"            ], currentLevel: 3 },
+  { id: "legend",        emoji: "👑", label: "Legend",        group: "prestige", levels: ["10 level III achievements",            "10 level III achievements",           "10 level III achievements"        ], currentLevel: 4 },
+  { id: "master",        emoji: "🌟", label: "Master",        group: "prestige", levels: ["25 achievements total",                "25 achievements total",               "25 achievements total"            ], currentLevel: 4 },
   { id: "grandmaster",   emoji: "⭐", label: "Grandmaster",   group: "prestige", levels: ["50 achievements total",                "50 achievements total",               "50 achievements total"            ], currentLevel: 0 },
 ];
 
 const LEVEL_STYLES = {
-  0: { border: "", badge: "", badgeText: "" },
-  1: { border: "border-l-2 border-amber-600/60",  badge: "bg-amber-50  dark:bg-amber-900/20  text-amber-700  dark:text-amber-400",  badgeText: "I"   },
-  2: { border: "border-l-2 border-slate-400/70",  badge: "bg-slate-100 dark:bg-slate-700/40  text-slate-500  dark:text-slate-300",  badgeText: "II"  },
-  3: { border: "border-l-2 border-yellow-400",    badge: "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400", badgeText: "III" },
+  0: { border: "", badge: "", icon: "" },
+  1: { border: "border-l-2 border-amber-600/60",  badge: "bg-amber-50  dark:bg-amber-900/20  text-amber-700  dark:text-amber-400",  icon: "I"   },
+  2: { border: "border-l-2 border-slate-400/70",  badge: "bg-slate-100 dark:bg-slate-700/40  text-slate-500  dark:text-slate-300",  icon: "II"  },
+  3: { border: "border-l-2 border-yellow-400",    badge: "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400", icon: "III" },
+  4: { border: "border-l-2 border-green-400",     badge: "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400",  icon: "IV"  },
 } as const;
+
+const PRESTIGE_STYLES: Record<string, { border: string; badge: string; icon: string }> = {
+  legend:      { border: "border-l-2 border-amber-400",  badge: "bg-amber-50  dark:bg-amber-900/30  text-amber-600  dark:text-amber-400",  icon: "✦" },
+  master:      { border: "border-l-2 border-violet-400", badge: "bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400", icon: "✦" },
+  grandmaster: { border: "border-l-2 border-cyan-400",   badge: "bg-cyan-50   dark:bg-cyan-900/30   text-cyan-600   dark:text-cyan-400",   icon: "✦" },
+};
 
 const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -573,7 +580,8 @@ export function Profile() {
                       .sort((a, b) => b.currentLevel - a.currentLevel)
                       .map((a) => {
                         const lvl = a.currentLevel;
-                        const style = LEVEL_STYLES[lvl];
+                        const isPrestige = a.group === "prestige";
+                        const style = isPrestige ? PRESTIGE_STYLES[a.id] : LEVEL_STYLES[lvl];
                         return (
                           <div
                             key={a.id}
@@ -582,10 +590,10 @@ export function Profile() {
                             <span className="text-[18px] leading-none">{a.emoji}</span>
                             <div className="min-w-0">
                               <p className="text-[12px] text-zinc-800 dark:text-zinc-200 leading-tight">{a.label}</p>
-                              <p className="text-[10px] text-zinc-500 mt-0.5 leading-tight truncate">{a.levels[lvl - 1]}</p>
+                              <p className="text-[10px] text-zinc-500 mt-0.5 leading-tight truncate">{a.levels[isPrestige ? 0 : lvl - 1]}</p>
                             </div>
                             <span className={`ml-auto shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${style.badge}`}>
-                              {style.badgeText}
+                              {style.icon}
                             </span>
                           </div>
                         );
@@ -636,23 +644,27 @@ export function Profile() {
                   .sort((a, b) => b.currentLevel - a.currentLevel)
                   .map((a) => {
                     const lvl = a.currentLevel;
-                    const style = LEVEL_STYLES[lvl];
+                    const unlocked = lvl > 0;
+                    const isPrestige = a.group === "prestige";
+                    const style = isPrestige
+                      ? (unlocked ? PRESTIGE_STYLES[a.id] : { border: "", badge: "", icon: "" })
+                      : LEVEL_STYLES[lvl];
                     const desc = lvl > 0 ? a.levels[lvl - 1] : a.levels[0];
                     return (
                       <div
                         key={a.id}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${style.border} ${
-                          lvl > 0 ? "bg-zinc-50 dark:bg-zinc-800/60" : "opacity-40"
+                          unlocked ? "bg-zinc-50 dark:bg-zinc-800/60" : "opacity-40"
                         }`}
                       >
-                        <span className={`text-[18px] leading-none ${lvl > 0 ? "" : "grayscale"}`}>{a.emoji}</span>
+                        <span className={`text-[18px] leading-none ${unlocked ? "" : "grayscale"}`}>{a.emoji}</span>
                         <div className="min-w-0">
                           <p className="text-[12px] text-zinc-800 dark:text-zinc-200 leading-tight">{a.label}</p>
                           <p className="text-[10px] text-zinc-500 mt-0.5 leading-tight truncate">{desc}</p>
                         </div>
-                        {lvl > 0 && (
+                        {unlocked && (
                           <span className={`ml-auto shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${style.badge}`}>
-                            {style.badgeText}
+                            {style.icon}
                           </span>
                         )}
                       </div>

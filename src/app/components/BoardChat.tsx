@@ -552,7 +552,62 @@ export function BoardChat({ boardId, boardName, memberCount, defaultOpen = false
   const [videoSeconds, setVideoSeconds] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+
+  // ── Drag & resize (desktop only) ─────────────────────────────────────────
+  const [panelPos, setPanelPos] = useState<{ x: number; y: number } | null>(null);
+  const [panelSize, setPanelSize] = useState({ w: 384, h: 520 });
+  const dragData = useRef<{ sx: number; sy: number; px: number; py: number } | null>(null);
+  const resizeData = useRef<{ sx: number; sy: number; sw: number; sh: number } | null>(null);
+
+  const onDragStart = (e: React.MouseEvent) => {
+    if (window.innerWidth < 640) return;
+    e.preventDefault();
+    const rect = panelRef.current!.getBoundingClientRect();
+    const px = panelPos?.x ?? rect.left;
+    const py = panelPos?.y ?? rect.top;
+    dragData.current = { sx: e.clientX, sy: e.clientY, px, py };
+
+    const onMove = (ev: MouseEvent) => {
+      if (!dragData.current) return;
+      const { sx, sy, px, py } = dragData.current;
+      setPanelPos({
+        x: Math.max(0, Math.min(window.innerWidth - panelSize.w, px + ev.clientX - sx)),
+        y: Math.max(0, Math.min(window.innerHeight - 80, py + ev.clientY - sy)),
+      });
+    };
+    const onUp = () => {
+      dragData.current = null;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+
+  const onResizeStart = (e: React.MouseEvent) => {
+    if (window.innerWidth < 640) return;
+    e.preventDefault();
+    e.stopPropagation();
+    resizeData.current = { sx: e.clientX, sy: e.clientY, sw: panelSize.w, sh: panelSize.h };
+
+    const onMove = (ev: MouseEvent) => {
+      if (!resizeData.current) return;
+      const { sx, sy, sw, sh } = resizeData.current;
+      setPanelSize({
+        w: Math.max(280, Math.min(window.innerWidth - 40, sw + ev.clientX - sx)),
+        h: Math.max(320, Math.min(window.innerHeight - 80, sh + ev.clientY - sy)),
+      });
+    };
+    const onUp = () => {
+      resizeData.current = null;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -798,13 +853,24 @@ export function BoardChat({ boardId, boardName, memberCount, defaultOpen = false
       </button>
 
       <div
-        className={`fixed z-50 flex flex-col bg-white dark:bg-zinc-900 transition-all duration-200
+        ref={panelRef}
+        className={`fixed z-50 flex flex-col bg-white dark:bg-zinc-900 transition-[opacity,transform] duration-200
           inset-0 rounded-none
-          sm:inset-auto sm:bottom-22 sm:right-6 sm:w-96 sm:rounded-xl sm:shadow-2xl sm:border sm:border-zinc-200 sm:dark:border-zinc-800 sm:origin-bottom-right sm:max-h-[70vh]
+          sm:inset-auto sm:rounded-xl sm:shadow-2xl sm:border sm:border-zinc-200 sm:dark:border-zinc-800 sm:origin-bottom-right
           ${isOpen ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
+        style={
+          window.innerWidth >= 640
+            ? panelPos
+              ? { left: panelPos.x, top: panelPos.y, width: panelSize.w, height: panelSize.h }
+              : { bottom: 88, right: 24, width: panelSize.w, height: panelSize.h }
+            : undefined
+        }
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+        {/* Header — drag handle on desktop */}
+        <div
+          className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 shrink-0 sm:cursor-grab sm:active:cursor-grabbing select-none"
+          onMouseDown={onDragStart}
+        >
           <div>
             <p className="text-[13px] text-zinc-900 dark:text-zinc-100 font-medium leading-tight">{boardName}</p>
             <div className="flex items-center gap-1 mt-0.5">
@@ -1085,6 +1151,17 @@ export function BoardChat({ boardId, boardName, memberCount, defaultOpen = false
               </p>
             )
           )}
+        </div>
+
+        {/* Resize grip — desktop only */}
+        <div
+          onMouseDown={onResizeStart}
+          className="hidden sm:block absolute bottom-0 right-0 w-4 h-4 cursor-se-resize z-10"
+          style={{ touchAction: "none" }}
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" className="absolute bottom-1 right-1 text-zinc-300 dark:text-zinc-600">
+            <path d="M11 1L1 11M11 6L6 11M11 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
         </div>
       </div>
     </>
