@@ -45,12 +45,6 @@ export function Dashboard() {
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (board && !board.isOwner && sidebarTab === "ai") {
-      setSidebarTab("team");
-    }
-  }, [board?.isOwner]);
-
-  useEffect(() => {
     if (pickerStep === "closed") return;
     const handler = (e: MouseEvent) => {
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
@@ -71,6 +65,12 @@ export function Dashboard() {
   const aiInsightsLoading = burnoutLoading || promotionLoading;
 
   useBoardWebSocket(boardId);
+
+  useEffect(() => {
+    if (board && !board.isOwner && sidebarTab === "ai") {
+      setSidebarTab("team");
+    }
+  }, [board?.isOwner]);
 
   if (boardLoading) {
     return (
