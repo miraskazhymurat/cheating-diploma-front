@@ -37,12 +37,18 @@ export function Dashboard() {
   const { user } = useAuth();
 
   const [viewMode, setViewMode] = useState<"list" | "board">("list");
-  const [sidebarTab, setSidebarTab] = useState<"team" | "ai" | "points">("ai");
+  const [sidebarTab, setSidebarTab] = useState<"team" | "ai" | "points">("team");
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
   const [pickerStep, setPickerStep] = useState<"closed" | "property" | "value">("closed");
   const [pendingProperty, setPendingProperty] = useState<FilterProperty | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (board && !board.isOwner && sidebarTab === "ai") {
+      setSidebarTab("team");
+    }
+  }, [board?.isOwner]);
 
   useEffect(() => {
     if (pickerStep === "closed") return;
@@ -60,8 +66,8 @@ export function Dashboard() {
   const { data: rawTasks = [], isLoading: tasksLoading } = useBoardTasks(boardId);
   const { data: employees = [] } = useBoardEmployees(boardId);
   const { data: statuses = [] } = useBoardStatuses(boardId);
-  const { data: burnoutData, isLoading: burnoutLoading } = useBurnoutAlerts(boardId);
-  const { data: promotionData, isLoading: promotionLoading } = usePromotionCandidates(boardId);
+  const { data: burnoutData, isLoading: burnoutLoading } = useBurnoutAlerts(board?.isOwner ? boardId : 0);
+  const { data: promotionData, isLoading: promotionLoading } = usePromotionCandidates(board?.isOwner ? boardId : 0);
   const aiInsightsLoading = burnoutLoading || promotionLoading;
 
   useBoardWebSocket(boardId);
@@ -88,6 +94,8 @@ export function Dashboard() {
       </div>
     );
   }
+
+  const isOwner = board.isOwner;
 
   const uiTasks = rawTasks.map((t) => taskResponseToUI(t, employees));
   const { burnoutAlerts, promotionCandidates } = deriveAIInsights(employees, uiTasks);
@@ -297,17 +305,19 @@ export function Dashboard() {
             <div className="block">
               {/* Tab bar */}
               <div className="flex items-center gap-1 mb-4 px-3">
-                <button
-                  onClick={() => setSidebarTab("ai")}
-                  className={`flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-md transition-colors ${
-                    sidebarTab === "ai"
-                      ? "bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300"
-                      : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                  }`}
-                >
-                  <Sparkles className="w-3 h-3" />
-                  AI
-                </button>
+                {isOwner && (
+                  <button
+                    onClick={() => setSidebarTab("ai")}
+                    className={`flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-md transition-colors ${
+                      sidebarTab === "ai"
+                        ? "bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300"
+                        : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    AI
+                  </button>
+                )}
                 <button
                   onClick={() => setSidebarTab("team")}
                   className={`flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-md transition-colors ${
@@ -331,7 +341,7 @@ export function Dashboard() {
                 </button>
               </div>
 
-              {sidebarTab === "ai" ? (
+              {sidebarTab === "ai" && isOwner ? (
                 <AIInsights
                   burnoutAlerts={burnoutData?.alerts ?? []}
                   promotionCandidates={promotionData?.candidates ?? []}
@@ -367,17 +377,19 @@ export function Dashboard() {
             {/* Tabbed sidebar */}
             <div className="w-full lg:w-64 lg:shrink-0">
               <div className="flex items-center gap-1 mb-4 px-3">
-                <button
-                  onClick={() => setSidebarTab("ai")}
-                  className={`flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-md transition-colors ${
-                    sidebarTab === "ai"
-                      ? "bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300"
-                      : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                  }`}
-                >
-                  <Sparkles className="w-3 h-3" />
-                  AI
-                </button>
+                {isOwner && (
+                  <button
+                    onClick={() => setSidebarTab("ai")}
+                    className={`flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-md transition-colors ${
+                      sidebarTab === "ai"
+                        ? "bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300"
+                        : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    AI
+                  </button>
+                )}
                 <button
                   onClick={() => setSidebarTab("team")}
                   className={`flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-md transition-colors ${
@@ -401,7 +413,7 @@ export function Dashboard() {
                 </button>
               </div>
 
-              {sidebarTab === "ai" ? (
+              {sidebarTab === "ai" && isOwner ? (
                 <AIInsights
                   burnoutAlerts={burnoutData?.alerts ?? []}
                   promotionCandidates={promotionData?.candidates ?? []}
