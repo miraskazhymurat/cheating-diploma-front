@@ -1,11 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { gamificationApi, type GiveKudosRequest } from "../api/gamification";
 
-export function useLeaderboard() {
+export function useReceivedKudos() {
   return useQuery({
-    queryKey: ["leaderboard"],
-    queryFn: gamificationApi.getLeaderboard,
-    staleTime: 60_000, // refresh every minute
+    queryKey: ["gamification", "kudos-received"],
+    queryFn: gamificationApi.getReceivedKudos,
+    staleTime: 30_000,
+  });
+}
+
+export function useLeaderboard(boardId: number) {
+  return useQuery({
+    queryKey: ["leaderboard", boardId],
+    queryFn: () => gamificationApi.getLeaderboard(boardId),
+    enabled: boardId > 0,
+    staleTime: 60_000,
   });
 }
 
@@ -26,10 +35,11 @@ export function useUserGamificationStats(userId: number) {
   });
 }
 
-export function usePointsHistory() {
+export function usePointsHistory(boardId: number) {
   return useQuery({
-    queryKey: ["gamification", "history"],
-    queryFn: gamificationApi.getPointsHistory,
+    queryKey: ["gamification", "history", boardId],
+    queryFn: () => gamificationApi.getPointsHistory(boardId),
+    enabled: boardId > 0,
     staleTime: 30_000,
   });
 }

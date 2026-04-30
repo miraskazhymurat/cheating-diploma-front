@@ -340,7 +340,7 @@ export function Dashboard() {
               ) : sidebarTab === "points" ? (
                 <div className="px-1">
                   <h2 className="text-[13px] text-zinc-500 dark:text-zinc-400 mb-3 px-2">My Points History</h2>
-                  <PointsHistory />
+                  <PointsHistory boardId={boardId} />
                 </div>
               ) : (
                 <div className="space-y-8">
@@ -410,7 +410,7 @@ export function Dashboard() {
               ) : sidebarTab === "points" ? (
                 <div className="px-1">
                   <h2 className="text-[13px] text-zinc-500 dark:text-zinc-400 mb-3 px-2">My Points History</h2>
-                  <PointsHistory />
+                  <PointsHistory boardId={boardId} />
                 </div>
               ) : (
                 <div className="space-y-8">

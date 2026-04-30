@@ -139,7 +139,7 @@ export function Leaderboard({ employees, currentUserId, boardId }: LeaderboardPr
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   // ── Real data from backend ──────────────────────────────────────────────────
-  const { data: leaderboardData = [] } = useLeaderboard();
+  const { data: leaderboardData = [] } = useLeaderboard(boardId);
   const { data: myStats } = useMyGamificationStats();
 
   const { data: memberStats = [] } = useBoardMemberStats(boardId);

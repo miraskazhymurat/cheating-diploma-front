@@ -47,6 +47,16 @@ export interface KudosStatusResponse {
   max_per_week: number;
 }
 
+export interface ReceivedKudosResponse {
+  id: number;
+  from_user_id: number;
+  from_name: string;
+  from_photo: string;
+  task_id?: number;
+  message: string;
+  created_at: string;
+}
+
 export interface GiveKudosRequest {
   to_user_id: number;
   task_id?: number;
@@ -69,8 +79,8 @@ export const REASON_LABELS: Record<string, string> = {
 // ─── API calls ────────────────────────────────────────────────────────────────
 
 export const gamificationApi = {
-  getLeaderboard: async (): Promise<LeaderboardEntry[]> => {
-    const { data } = await axiosInstance.get<LeaderboardEntry[]>("/leaderboard");
+  getLeaderboard: async (boardId: number): Promise<LeaderboardEntry[]> => {
+    const { data } = await axiosInstance.get<LeaderboardEntry[]>("/leaderboard", { params: { board_id: boardId } });
     return data;
   },
 
@@ -84,8 +94,8 @@ export const gamificationApi = {
     return data;
   },
 
-  getPointsHistory: async (): Promise<PointTransactionResponse[]> => {
-    const { data } = await axiosInstance.get<PointTransactionResponse[]>("/gamification/history");
+  getPointsHistory: async (boardId: number): Promise<PointTransactionResponse[]> => {
+    const { data } = await axiosInstance.get<PointTransactionResponse[]>("/gamification/history", { params: { board_id: boardId } });
     return data;
   },
 
@@ -96,5 +106,10 @@ export const gamificationApi = {
 
   giveKudos: async (payload: GiveKudosRequest): Promise<void> => {
     await axiosInstance.post("/kudos", payload);
+  },
+
+  getReceivedKudos: async (): Promise<ReceivedKudosResponse[]> => {
+    const { data } = await axiosInstance.get<ReceivedKudosResponse[]>("/gamification/kudos/received");
+    return data;
   },
 };
