@@ -3,6 +3,7 @@ import { BoardView } from "../components/BoardView";
 import { TeamWorkload } from "../components/TeamWorkload";
 import { AIInsights } from "../components/AIInsights";
 import { Leaderboard } from "../components/Leaderboard";
+import { PointsHistory } from "../components/PointsHistory";
 import { CreateTaskModal } from "../components/CreateTaskModal";
 import { BoardChat } from "../components/BoardChat";
 import { useBurnoutAlerts, usePromotionCandidates } from "../../hooks/useAIInsights";
@@ -36,7 +37,7 @@ export function Dashboard() {
   const { user } = useAuth();
 
   const [viewMode, setViewMode] = useState<"list" | "board">("list");
-  const [sidebarTab, setSidebarTab] = useState<"team" | "ai">("ai");
+  const [sidebarTab, setSidebarTab] = useState<"team" | "ai" | "points">("ai");
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
   const [pickerStep, setPickerStep] = useState<"closed" | "property" | "value">("closed");
@@ -318,6 +319,16 @@ export function Dashboard() {
                   <Users className="w-3 h-3" />
                   Team
                 </button>
+                <button
+                  onClick={() => setSidebarTab("points")}
+                  className={`flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-md transition-colors ${
+                    sidebarTab === "points"
+                      ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300"
+                      : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                  }`}
+                >
+                  ⭐ Pts
+                </button>
               </div>
 
               {sidebarTab === "ai" ? (
@@ -326,6 +337,11 @@ export function Dashboard() {
                   promotionCandidates={promotionData?.candidates ?? []}
                   isLoading={aiInsightsLoading}
                 />
+              ) : sidebarTab === "points" ? (
+                <div className="px-1">
+                  <h2 className="text-[13px] text-zinc-500 dark:text-zinc-400 mb-3 px-2">My Points History</h2>
+                  <PointsHistory />
+                </div>
               ) : (
                 <div className="space-y-8">
                   <div>
@@ -345,7 +361,7 @@ export function Dashboard() {
                 Tasks
                 {tasksLoading && <span className="ml-2 text-zinc-400 dark:text-zinc-600">Loading…</span>}
               </h2>
-              <BoardView boardId={boardId} tasks={filteredTasks} statuses={statuses} />
+              <BoardView boardId={boardId} tasks={filteredTasks} statuses={statuses} currentUserId={user?.id} />
             </div>
 
             {/* Tabbed sidebar */}
@@ -373,6 +389,16 @@ export function Dashboard() {
                   <Users className="w-3 h-3" />
                   Team
                 </button>
+                <button
+                  onClick={() => setSidebarTab("points")}
+                  className={`flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-md transition-colors ${
+                    sidebarTab === "points"
+                      ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300"
+                      : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                  }`}
+                >
+                  ⭐ Pts
+                </button>
               </div>
 
               {sidebarTab === "ai" ? (
@@ -381,6 +407,11 @@ export function Dashboard() {
                   promotionCandidates={promotionData?.candidates ?? []}
                   isLoading={aiInsightsLoading}
                 />
+              ) : sidebarTab === "points" ? (
+                <div className="px-1">
+                  <h2 className="text-[13px] text-zinc-500 dark:text-zinc-400 mb-3 px-2">My Points History</h2>
+                  <PointsHistory />
+                </div>
               ) : (
                 <div className="space-y-8">
                   <div>

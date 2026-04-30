@@ -61,6 +61,7 @@ export interface TaskResponse {
   reporter_id: number;
   reporter?: TaskUser;
   time_spent: number;
+  due_date?: string;
   created_at: string;
   updated_at: string;
   attachments?: AttachmentResponse[];
@@ -121,6 +122,7 @@ export interface UpdateTaskRequest {
   assignee_id?: number | null;
   tester_id?: number | null;
   time_spent?: number;
+  due_date?: string; // RFC3339
 }
 
 // ─── UI display types ───────────────────────────────────────────────────────

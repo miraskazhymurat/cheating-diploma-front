@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useUpdateTask, useDeleteAttachment, useUploadAttachment, useDeleteTask } from "../../hooks/useTasks";
 import { useTaskComments, useAddComment, useDeleteComment } from "../../hooks/useComments";
 import { useBoardEmployees } from "../../hooks/useEmployee";
+import { KudosButton } from "./KudosButton";
 
 const ESTIMATE_STORAGE_KEY = (taskId: number) => `task_ai_estimate_${taskId}`;
 
@@ -211,9 +212,10 @@ interface TaskModalProps {
   onClose: () => void;
   boardId?: number;
   statuses?: BoardStatusResponse[];
+  currentUserId?: number;
 }
 
-export function TaskModal({ task, isOpen, onClose, boardId, statuses = [] }: TaskModalProps) {
+export function TaskModal({ task, isOpen, onClose, boardId, statuses = [], currentUserId }: TaskModalProps) {
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [showEstimatePopover, setShowEstimatePopover] = useState(false);
   const estimateLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -469,6 +471,19 @@ export function TaskModal({ task, isOpen, onClose, boardId, statuses = [] }: Tas
                 )}
               </div>
             </div>
+
+            {/* Kudos */}
+            {assigneeId && assigneeId !== currentUserId && (
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-zinc-400 dark:text-zinc-600">Praise the assignee:</span>
+                <KudosButton
+                  toUserId={assigneeId}
+                  toUserName={assigneeName ?? "Assignee"}
+                  taskId={task.backendId}
+                  fromUserId={currentUserId}
+                />
+              </div>
+            )}
 
             {/* Description */}
             <div>

@@ -3,33 +3,47 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import type { EmployeeResponse } from "../../api/types";
 import { useBoardMemberStats } from "../../hooks/useBoards";
+import { useLeaderboard, useMyGamificationStats } from "../../hooks/useGamification";
 
-// ── Level config ──────────────────────────────────────────────────────────────
+// ── Level config (mirrors backend Levels slice — sourced from API stats.levels) ─
 
-const LEVELS = [
-  { min: 0,    max: 99,         n: 1, name: "Novice",      color: "text-zinc-500 dark:text-zinc-400",    bg: "bg-zinc-100 dark:bg-zinc-800",           bar: "bg-zinc-400" },
-  { min: 100,  max: 299,        n: 2, name: "Contributor", color: "text-sky-600 dark:text-sky-400",      bg: "bg-sky-50 dark:bg-sky-950/50",           bar: "bg-sky-400" },
-  { min: 300,  max: 699,        n: 3, name: "Performer",   color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/50", bar: "bg-emerald-400" },
-  { min: 700,  max: 1499,       n: 4, name: "Expert",      color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-950/50",    bar: "bg-violet-400" },
-  { min: 1500, max: 2999,       n: 5, name: "Elite",       color: "text-amber-600 dark:text-amber-400",  bg: "bg-amber-50 dark:bg-amber-950/50",       bar: "bg-amber-400" },
-  { min: 3000, max: Infinity,   n: 6, name: "Legend",      color: "text-red-500 dark:text-red-400",      bg: "bg-red-50 dark:bg-red-950/50",           bar: "bg-red-400" },
+const FALLBACK_LEVELS = [
+  { min: 0,    max: 99,       n: 1, name: "Novice",      color: "text-zinc-500 dark:text-zinc-400",       bg: "bg-zinc-100 dark:bg-zinc-800",            bar: "bg-zinc-400" },
+  { min: 100,  max: 299,      n: 2, name: "Contributor",  color: "text-sky-600 dark:text-sky-400",         bg: "bg-sky-50 dark:bg-sky-950/50",            bar: "bg-sky-400" },
+  { min: 300,  max: 699,      n: 3, name: "Performer",    color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/50",    bar: "bg-emerald-400" },
+  { min: 700,  max: 1499,     n: 4, name: "Expert",       color: "text-violet-600 dark:text-violet-400",   bg: "bg-violet-50 dark:bg-violet-950/50",      bar: "bg-violet-400" },
+  { min: 1500, max: 2999,     n: 5, name: "Elite",        color: "text-amber-600 dark:text-amber-400",     bg: "bg-amber-50 dark:bg-amber-950/50",        bar: "bg-amber-400" },
+  { min: 3000, max: Infinity, n: 6, name: "Legend",       color: "text-red-500 dark:text-red-400",         bg: "bg-red-50 dark:bg-red-950/50",            bar: "bg-red-400" },
 ];
 
+const LEVEL_STYLE: Record<string, { color: string; bg: string; bar: string }> = {
+  Novice:      { color: "text-zinc-500 dark:text-zinc-400",       bg: "bg-zinc-100 dark:bg-zinc-800",         bar: "bg-zinc-400" },
+  Contributor: { color: "text-sky-600 dark:text-sky-400",         bg: "bg-sky-50 dark:bg-sky-950/50",         bar: "bg-sky-400" },
+  Performer:   { color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/50", bar: "bg-emerald-400" },
+  Expert:      { color: "text-violet-600 dark:text-violet-400",   bg: "bg-violet-50 dark:bg-violet-950/50",   bar: "bg-violet-400" },
+  Elite:       { color: "text-amber-600 dark:text-amber-400",     bg: "bg-amber-50 dark:bg-amber-950/50",     bar: "bg-amber-400" },
+  Legend:      { color: "text-red-500 dark:text-red-400",         bg: "bg-red-50 dark:bg-red-950/50",         bar: "bg-red-400" },
+};
+
+function getLevelStyle(name: string) {
+  return LEVEL_STYLE[name] ?? LEVEL_STYLE["Novice"];
+}
+
 function getLevel(pts: number) {
-  return LEVELS.find((l) => pts >= l.min && pts <= l.max) ?? LEVELS[0];
+  return FALLBACK_LEVELS.find((l) => pts >= l.min && pts <= l.max) ?? FALLBACK_LEVELS[0];
 }
 
 function nextLevel(pts: number) {
-  return LEVELS.find((l) => l.min > pts) ?? null;
+  return FALLBACK_LEVELS.find((l) => l.min > pts) ?? null;
 }
 
 // ── Board labels ─────────────────────────────────────────────────────────────
 
 const BOARD_LABELS = [
-  { id: "challenger",   emoji: "⚔️",  name: "Challenger",   desc: "Most hard tasks in this board",     ring: "ring-red-400/50",     bg: "bg-red-50 dark:bg-red-950/40",       text: "text-red-500 dark:text-red-400"     },
-  { id: "pollmaster",   emoji: "🗳️",  name: "Poll Master",  desc: "Most polls created in this board",  ring: "ring-sky-400/50",     bg: "bg-sky-50 dark:bg-sky-950/40",       text: "text-sky-500 dark:text-sky-400"     },
+  { id: "challenger",   emoji: "⚔️",  name: "Challenger",   desc: "Most hard tasks in this board",     ring: "ring-red-400/50",     bg: "bg-red-50 dark:bg-red-950/40",        text: "text-red-500 dark:text-red-400"     },
+  { id: "pollmaster",   emoji: "🗳️",  name: "Poll Master",  desc: "Most polls created in this board",  ring: "ring-sky-400/50",     bg: "bg-sky-50 dark:bg-sky-950/40",        text: "text-sky-500 dark:text-sky-400"     },
   { id: "communicator", emoji: "💬",  name: "Communicator", desc: "Most messages in this board",       ring: "ring-emerald-400/50", bg: "bg-emerald-50 dark:bg-emerald-950/40",text: "text-emerald-500 dark:text-emerald-400" },
-  { id: "finisher",     emoji: "⚡",  name: "Finisher",     desc: "Most completed tasks in this board",ring: "ring-amber-400/50",   bg: "bg-amber-50 dark:bg-amber-950/40",   text: "text-amber-500 dark:text-amber-400" },
+  { id: "finisher",     emoji: "⚡",  name: "Finisher",     desc: "Most completed tasks in this board",ring: "ring-amber-400/50",   bg: "bg-amber-50 dark:bg-amber-950/40",    text: "text-amber-500 dark:text-amber-400" },
 ] as const;
 
 type BoardLabelId = typeof BOARD_LABELS[number]["id"];
@@ -37,13 +51,13 @@ type BoardLabelId = typeof BOARD_LABELS[number]["id"];
 // ── Trophies ──────────────────────────────────────────────────────────────────
 
 const TROPHIES = [
-  { id: "first",   icon: "⚔️",  name: "First Blood",  earned: (pts: number, _s: number) => pts >= 10 },
-  { id: "roll",    icon: "🔥",  name: "On a Roll",     earned: (_p: number, s: number) => s >= 5 },
-  { id: "stop",    icon: "⚡",  name: "Unstoppable",   earned: (_p: number, s: number) => s >= 20 },
-  { id: "perf",    icon: "⭐",  name: "Performer",     earned: (pts: number, _s: number) => pts >= 300 },
-  { id: "exp",     icon: "💎",  name: "Expert",        earned: (pts: number, _s: number) => pts >= 700 },
-  { id: "elite",   icon: "👑",  name: "Elite",         earned: (pts: number, _s: number) => pts >= 1500 },
-  { id: "legend",  icon: "🏆",  name: "Legend",        earned: (pts: number, _s: number) => pts >= 3000 },
+  { id: "first",  icon: "⚔️",  name: "First Blood",  earned: (pts: number, _s: number) => pts >= 10 },
+  { id: "roll",   icon: "🔥",  name: "On a Roll",     earned: (_p: number, s: number)  => s >= 5 },
+  { id: "stop",   icon: "⚡",  name: "Unstoppable",   earned: (_p: number, s: number)  => s >= 20 },
+  { id: "perf",   icon: "⭐",  name: "Performer",     earned: (pts: number, _s: number) => pts >= 300 },
+  { id: "exp",    icon: "💎",  name: "Expert",        earned: (pts: number, _s: number) => pts >= 700 },
+  { id: "elite",  icon: "👑",  name: "Elite",         earned: (pts: number, _s: number) => pts >= 1500 },
+  { id: "legend", icon: "🏆",  name: "Legend",        earned: (pts: number, _s: number) => pts >= 3000 },
 ];
 
 // ── Point rules ───────────────────────────────────────────────────────────────
@@ -52,39 +66,15 @@ const POINT_RULES = [
   { event: "Task completed",        pts: "+10",  note: "Base" },
   { event: "On-time bonus",         pts: "+5",   note: "Before due date" },
   { event: "Quality bonus",         pts: "+3",   note: "No reopens / 5 days" },
-  { event: "Complexity multiplier", pts: "×1–2", note: "e.g. ×1.7 for score 7" },
+  { event: "Complexity multiplier", pts: "×1–2", note: "e.g. ×2.0 for hard" },
   { event: "Streak bonus",          pts: "+2/d", note: "After 3 consecutive days" },
   { event: "Weekly milestone",      pts: "+10",  note: "Every 5-day streak" },
-  { event: "Peer kudos",            pts: "+5",   note: "@mention praise" },
+  { event: "Peer kudos",            pts: "+5",   note: "@mention praise (max 3/wk)" },
+  { event: "Combo bonus",           pts: "+5",   note: "3+ tasks in one day" },
+  { event: "Daily cap",             pts: "100",  note: "Hard ceiling per day" },
 ];
 
-// ── Deterministic score generation ───────────────────────────────────────────
-
-function pseudoRand(seed: number, offset: number) {
-  const x = Math.sin(seed * 127.1 + offset * 311.7) * 43758.5453;
-  return x - Math.floor(x);
-}
-
-interface GEntry {
-  emp: EmployeeResponse;
-  pts30d: number;
-  totalPts: number;
-  streak: number;
-}
-
-function buildEntries(employees: EmployeeResponse[]): GEntry[] {
-  return employees
-    .map((emp) => {
-      const s = emp.user_id;
-      return {
-        emp,
-        pts30d:   Math.round(150 + pseudoRand(s, 10) * 1050),
-        totalPts: Math.round(200 + pseudoRand(s, 11) * 2800),
-        streak:   Math.round(pseudoRand(s, 12) * 21),
-      };
-    })
-    .sort((a, b) => b.pts30d - a.pts30d);
-}
+// ── Board-label computation ───────────────────────────────────────────────────
 
 interface MemberStatMap {
   hardTasks: number;
@@ -99,10 +89,10 @@ function computeBoardLabels(
 ): Map<number, BoardLabelId[]> {
   if (statsById.size === 0) return new Map();
   const statKeys: { id: BoardLabelId; key: keyof MemberStatMap }[] = [
-    { id: "challenger",   key: "hardTasks"      },
-    { id: "pollmaster",   key: "polls"          },
-    { id: "communicator", key: "messages"       },
-    { id: "finisher",     key: "completedTasks" },
+    { id: "challenger",   key: "hardTasks"       },
+    { id: "pollmaster",   key: "polls"           },
+    { id: "communicator", key: "messages"        },
+    { id: "finisher",     key: "completedTasks"  },
   ];
   const map = new Map<number, BoardLabelId[]>();
   for (const { id, key } of statKeys) {
@@ -147,21 +137,45 @@ export function Leaderboard({ employees, currentUserId, boardId }: LeaderboardPr
   const [showRules, setShowRules] = useState(false);
   const [openTooltip, setOpenTooltip] = useState<string | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const entries = useMemo(() => buildEntries(employees), [employees]);
+
+  // ── Real data from backend ──────────────────────────────────────────────────
+  const { data: leaderboardData = [] } = useLeaderboard();
+  const { data: myStats } = useMyGamificationStats();
 
   const { data: memberStats = [] } = useBoardMemberStats(boardId);
   const statsById = useMemo(() => {
     const map = new Map<number, MemberStatMap>();
     for (const s of memberStats) {
       map.set(s.user_id, {
-        hardTasks:     s.hard_tasks,
-        polls:         s.polls_created,
-        messages:      s.messages_sent,
+        hardTasks:      s.hard_tasks,
+        polls:          s.polls_created,
+        messages:       s.messages_sent,
         completedTasks: s.completed_tasks,
       });
     }
     return map;
   }, [memberStats]);
+
+  // Filter leaderboard to only show members of this board.
+  const boardUserIds = useMemo(() => new Set(employees.map((e) => e.user_id)), [employees]);
+
+  const entries = useMemo(() => {
+    // Prefer backend leaderboard data; fall back to showing board members with 0 pts.
+    const byUserId = new Map(leaderboardData.map((e) => [e.user_id, e]));
+    return employees
+      .map((emp) => {
+        const g = byUserId.get(emp.user_id);
+        return {
+          emp,
+          pts30d:   g?.rolling_points  ?? 0,
+          totalPts: g?.total_points    ?? 0,
+          streak:   g?.current_streak  ?? 0,
+          levelName: g?.level_name     ?? "Novice",
+          level:    g?.current_level   ?? 1,
+        };
+      })
+      .sort((a, b) => b.pts30d - a.pts30d);
+  }, [employees, leaderboardData]);
 
   const boardLabels = useMemo(() => computeBoardLabels(employees, statsById), [employees, statsById]);
 
@@ -180,13 +194,21 @@ export function Leaderboard({ employees, currentUserId, boardId }: LeaderboardPr
     };
   }, [openTooltip]);
 
-  const me = entries.find((e) => e.emp.user_id === currentUserId);
-  const myRank = entries.findIndex((e) => e.emp.user_id === currentUserId) + 1;
-  const myLvl = me ? getLevel(me.totalPts) : null;
-  const myNext = me ? nextLevel(me.totalPts) : null;
-  const myProgress = me && myLvl && myNext
-    ? ((me.totalPts - myLvl.min) / (myNext.min - myLvl.min)) * 100
+  // My stats from the API (falls back to leaderboard entry).
+  const myEntry = entries.find((e) => e.emp.user_id === currentUserId);
+  const myRank  = entries.findIndex((e) => e.emp.user_id === currentUserId) + 1;
+
+  const totalPts = myStats?.total_points ?? myEntry?.totalPts ?? 0;
+  const streak   = myStats?.current_streak ?? myEntry?.streak ?? 0;
+  const myLvl    = getLevel(totalPts);
+  const myNext   = nextLevel(totalPts);
+  const myProgress = myLvl && myNext
+    ? ((totalPts - myLvl.min) / (myNext.min - myLvl.min)) * 100
     : 100;
+
+  const dailyCapHit  = myStats?.daily_cap_hit ?? false;
+  const todayPoints  = myStats?.today_points ?? 0;
+  const dailyCap     = myStats?.daily_cap ?? 100;
 
   if (employees.length === 0) {
     return <p className="text-[12px] text-zinc-400 italic px-3">No members</p>;
@@ -195,8 +217,8 @@ export function Leaderboard({ employees, currentUserId, boardId }: LeaderboardPr
   return (
     <div className="space-y-5">
 
-      {/* ── My stats card ─────────────────────────────────────────────────── */}
-      {me && myLvl && (
+      {/* ── My stats card ────────────────────────────────────────────────── */}
+      {myEntry && myLvl && (
         <div className="mx-3 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
           {/* level banner */}
           <div className={`px-3 py-2 flex items-center justify-between ${myLvl.bg}`}>
@@ -216,13 +238,13 @@ export function Leaderboard({ employees, currentUserId, boardId }: LeaderboardPr
             <div className="flex items-end justify-between mb-2.5">
               <div className="leading-none">
                 <span className="text-[22px] font-bold text-zinc-800 dark:text-zinc-100 tabular-nums">
-                  {me.totalPts.toLocaleString()}
+                  {totalPts.toLocaleString()}
                 </span>
                 <span className="text-[11px] text-zinc-400 dark:text-zinc-500 ml-1">pts</span>
               </div>
               <div className="flex items-center gap-1 text-orange-500 mb-0.5">
                 <Flame className="w-3.5 h-3.5" />
-                <span className="text-[13px] font-semibold tabular-nums">{me.streak}</span>
+                <span className="text-[13px] font-semibold tabular-nums">{streak}</span>
                 <span className="text-[11px] text-zinc-400 dark:text-zinc-500">day streak</span>
               </div>
             </div>
@@ -238,7 +260,7 @@ export function Leaderboard({ employees, currentUserId, boardId }: LeaderboardPr
                 </div>
                 <div className="flex justify-between text-[10px] text-zinc-400 dark:text-zinc-600">
                   <span>{myLvl.name}</span>
-                  <span className="tabular-nums">{me.totalPts.toLocaleString()} / {myNext.min.toLocaleString()}</span>
+                  <span className="tabular-nums">{totalPts.toLocaleString()} / {myNext.min.toLocaleString()}</span>
                   <span>{myNext.name}</span>
                 </div>
               </>
@@ -246,10 +268,21 @@ export function Leaderboard({ employees, currentUserId, boardId }: LeaderboardPr
               <p className="text-[11px] text-amber-500 font-semibold text-center py-0.5">Max level — Legend 🏆</p>
             )}
 
+            {/* Daily cap indicator */}
+            <div className="mt-2 flex items-center gap-1.5 text-[10px] text-zinc-400 dark:text-zinc-600">
+              <span>Today:</span>
+              <span className={`font-semibold tabular-nums ${dailyCapHit ? "text-red-500" : "text-zinc-600 dark:text-zinc-400"}`}>
+                {todayPoints} / {dailyCap} pts
+              </span>
+              {dailyCapHit && (
+                <span className="text-red-500 font-medium">— max reached today</span>
+              )}
+            </div>
+
             {/* trophies */}
             <div className="mt-3 flex items-center gap-1 flex-wrap">
               {TROPHIES.map((t) => {
-                const earned = t.earned(me.totalPts, me.streak);
+                const earned = t.earned(totalPts, streak);
                 return (
                   <span
                     key={t.id}
@@ -275,7 +308,7 @@ export function Leaderboard({ employees, currentUserId, boardId }: LeaderboardPr
         <div className="space-y-px">
           {entries.map((entry, idx) => {
             const isMe = entry.emp.user_id === currentUserId;
-            const lvl = getLevel(entry.totalPts);
+            const style = getLevelStyle(entry.levelName);
             return (
               <Link
                 key={entry.emp.user_id}
@@ -299,8 +332,8 @@ export function Leaderboard({ employees, currentUserId, boardId }: LeaderboardPr
                     <span className={`text-[12px] font-medium truncate ${isMe ? "text-violet-700 dark:text-violet-300" : "text-zinc-700 dark:text-zinc-300"}`}>
                       {isMe ? "You" : entry.emp.full_name.split(" ")[0]}
                     </span>
-                    <span className={`text-[9px] font-semibold px-1 rounded shrink-0 ${lvl.bg} ${lvl.color}`}>
-                      {lvl.name}
+                    <span className={`text-[9px] font-semibold px-1 rounded shrink-0 ${style.bg} ${style.color}`}>
+                      {entry.levelName}
                     </span>
                   </div>
                   {entry.streak >= 3 && (
@@ -330,7 +363,6 @@ export function Leaderboard({ employees, currentUserId, boardId }: LeaderboardPr
                           >
                             {lbl.emoji}
                           </span>
-                          {/* Tooltip — visible on hover (desktop) or tap (mobile) */}
                           <div className={`pointer-events-none absolute bottom-full right-0 mb-1.5 z-50 ${isOpen ? "block" : "hidden group-hover/lbl:block"}`}>
                             <div className="bg-zinc-900 dark:bg-zinc-700 text-white rounded-md px-2.5 py-1.5 shadow-lg w-max max-w-[160px]">
                               <p className={`text-[11px] font-semibold ${lbl.text}`}>{lbl.name}</p>
@@ -346,7 +378,7 @@ export function Leaderboard({ employees, currentUserId, boardId }: LeaderboardPr
 
                 {/* 30-day pts */}
                 <span className="text-[12px] font-semibold text-zinc-700 dark:text-zinc-300 tabular-nums shrink-0">
-                  {entry.pts30d.toLocaleString()}
+                  {entry.pts30d > 0 ? entry.pts30d.toLocaleString() : "—"}
                 </span>
               </Link>
             );

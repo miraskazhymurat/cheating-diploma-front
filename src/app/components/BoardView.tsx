@@ -130,9 +130,10 @@ interface BoardViewProps {
   boardId: number;
   tasks: UITask[];
   statuses?: BoardStatusResponse[];
+  currentUserId?: number;
 }
 
-export function BoardView({ boardId, tasks, statuses = [] }: BoardViewProps) {
+export function BoardView({ boardId, tasks, statuses = [], currentUserId }: BoardViewProps) {
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const selectedTask = selectedTaskId != null ? tasks.find((t) => t.backendId === selectedTaskId) ?? null : null;
   const updateTask = useUpdateTask(boardId);
@@ -182,6 +183,7 @@ export function BoardView({ boardId, tasks, statuses = [] }: BoardViewProps) {
           onClose={() => setSelectedTaskId(null)}
           boardId={boardId}
           statuses={statuses}
+          currentUserId={currentUserId}
         />
       )}
     </>
